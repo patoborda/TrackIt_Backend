@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using trackit.server.Data;
+using trackit.server.Repositories.Interfaces;
+using trackit.server.Repositories;
+using trackit.server.Services.Interfaces;
+using trackit.server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +16,8 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IRequirementRepository, RequirementRepository>();
+builder.Services.AddScoped<IRequirementService, RequirementService>();
 
 var app = builder.Build();
 
