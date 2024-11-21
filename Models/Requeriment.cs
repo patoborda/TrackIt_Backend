@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System;
-using System.Collections.Generic;
-
 
 namespace trackit.server.Models
 {
@@ -10,25 +7,28 @@ namespace trackit.server.Models
     {
         public int Id { get; set; }
         public string Subject { get; set; }
-        public string Code { get; set; } // Optional: Auto-generated
+        public string Code { get; set; } // Código auto-generado
         public string Description { get; set; }
 
+        // Relación con RequirementType
         public int RequirementTypeId { get; set; }
         public RequirementType RequirementType { get; set; }
+
+        // Relación con Category
         public int CategoryId { get; set; }
         public Category Category { get; set; }
 
-        public ICollection<RequirementRelation> RelatedRequirements { get; set; }
-        /*
-        public DateTime Date { get; set; }
-        public TimeSpan Time { get; set; }
-
+        // Relación con Priority
         public int PriorityId { get; set; }
         public Priority Priority { get; set; }
-        public string Status { get; set; }
 
-        // Relationship with related requirements
-      
-       */
+        // Fecha de creación (valor predeterminado: ahora)
+        public DateTime Date { get; set; } = DateTime.UtcNow;
+
+        // Estado del requerimiento (valor predeterminado: "Abierto")
+        public string Status { get; set; } = "Abierto";
+
+        // Relación con otros requerimientos
+        public ICollection<RequirementRelation> RelatedRequirements { get; set; }
     }
 }

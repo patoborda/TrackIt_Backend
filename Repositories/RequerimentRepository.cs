@@ -30,18 +30,39 @@ namespace trackit.server.Repositories
             return await _context.Categories.AnyAsync(c => c.Id == categoryId && c.RequirementTypeId == typeId);
         }
 
-        // Implementación de GetRequirementTypeNameAsync
         public async Task<string> GetRequirementTypeNameAsync(int typeId)
         {
             var type = await _context.RequirementTypes.FindAsync(typeId);
-            return type?.Name ?? "Unknown"; // Devuelve "Unknown" si el tipo no existe
+            return type?.Name ?? "Unknown";
         }
 
-        // Implementación de GetCategoryNameAsync
         public async Task<string> GetCategoryNameAsync(int categoryId)
         {
             var category = await _context.Categories.FindAsync(categoryId);
-            return category?.Name ?? "Unknown"; // Devuelve "Unknown" si la categoría no existe
+            return category?.Name ?? "Unknown";
+        }
+
+        public async Task<string> GetPriorityNameAsync(int priorityId)
+        {
+            var priority = await _context.Priorities.FindAsync(priorityId);
+            return priority?.TypePrority ?? "Unknown";
+        }
+
+        public async Task<bool> ValidateRequirementExistsAsync(int requirementId)
+        {
+            return await _context.Requirements.AnyAsync(r => r.Id == requirementId);
+        }
+
+        public async Task AddRequirementRelationAsync(int requirementId, int relatedRequirementId)
+        {
+            var relation = new RequirementRelation
+            {
+                RequirementId = requirementId,
+                RelatedRequirementId = relatedRequirementId
+            };
+
+            _context.RequirementRelations.Add(relation);
+            await _context.SaveChangesAsync();
         }
     }
 }

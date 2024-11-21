@@ -11,7 +11,7 @@ public class AppDbContext : DbContext
     public DbSet<RequirementType> RequirementTypes { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<RequirementRelation> RequirementRelations { get; set; }
-
+    public DbSet<Priority> Priorities { get; set; } // Agrega esto
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -66,6 +66,12 @@ public class AppDbContext : DbContext
             new Category { Id = 3, Name = "Software Bug", RequirementTypeId = 2 },
             new Category { Id = 4, Name = "Database Maintenance", RequirementTypeId = 2 },
             new Category { Id = 5, Name = "Routine Check", RequirementTypeId = 3 }
+        );
+        // Seed Data para Priority
+        modelBuilder.Entity<Priority>().HasData(
+            new Priority { Id = 1, TypePrority = "Alta" },
+            new Priority { Id = 2, TypePrority = "Media" },
+            new Priority { Id = 3, TypePrority = "Baja" }
         );
     }
 

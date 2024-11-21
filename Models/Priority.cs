@@ -4,7 +4,7 @@
     {
       
         public int Id { get; set; }
-        public string Type { get; set; } // Example: High, Medium, Low
+        public string TypePrority { get; set; } // Example: High, Medium, Low
      
     }
 }

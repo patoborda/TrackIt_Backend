@@ -4,7 +4,9 @@
     {
         public string Subject { get; set; }
         public string Description { get; set; }
-        public int RequirementTypeId { get; set; } // Foreign key to RequirementType
-        public int CategoryId { get; set; } // Foreign key to Category
+        public int RequirementTypeId { get; set; }
+        public int CategoryId { get; set; }
+        public int PriorityId { get; set; }
+        public List<int>? RelatedRequirementIds { get; set; } // IDs de requerimientos relacionados
     }
 }

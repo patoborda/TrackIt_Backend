@@ -7,7 +7,12 @@ namespace trackit.server.Repositories.Interfaces
         Task<Requirement> AddAsync(Requirement requirement);
         Task<int> GetNextSequentialNumberAsync();
         Task<bool> ValidateTypeAndCategoryAsync(int typeId, int categoryId);
-        Task<string> GetRequirementTypeNameAsync(int typeId); // Nueva definición
-        Task<string> GetCategoryNameAsync(int categoryId); // Nueva definición
+        Task<string> GetRequirementTypeNameAsync(int typeId);
+        Task<string> GetCategoryNameAsync(int categoryId);
+        Task<string> GetPriorityNameAsync(int priorityId);
+
+        // Nuevos métodos
+        Task<bool> ValidateRequirementExistsAsync(int requirementId); // Validar existencia de requerimiento
+        Task AddRequirementRelationAsync(int requirementId, int relatedRequirementId); // Agregar relación
     }
 }
