@@ -19,12 +19,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddLogging(configure => configure.AddConsole());
 
 // Configurar la conexi�n con la base de datos
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContext<UserDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Configurar Identity
 builder.Services.AddIdentity<User, IdentityRole>()
-    .AddEntityFrameworkStores<AppDbContext>()
+    .AddEntityFrameworkStores<UserDbContext>()
     .AddDefaultTokenProviders();
 
 // Obtener la clave JWT de la configuraci�n

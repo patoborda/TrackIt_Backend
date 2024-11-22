@@ -1,13 +1,16 @@
 ﻿using trackit.server.Models;
 using trackit.server.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using trackit.server.Data;
+
+
 namespace trackit.server.Repositories
 {
     public class RequirementActionLogRepository : IRequirementActionLogRepository
     {
-        private readonly AppDbContext _context;
+        private readonly UserDbContext _context;
 
-        public RequirementActionLogRepository(AppDbContext context)
+        public RequirementActionLogRepository(UserDbContext context)
         {
             _context = context;
         }

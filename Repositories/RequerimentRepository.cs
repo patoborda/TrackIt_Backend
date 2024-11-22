@@ -1,14 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using trackit.server.Models;
 using trackit.server.Repositories.Interfaces;
+using trackit.server.Data;
 
 namespace trackit.server.Repositories
 {
     public class RequirementRepository : IRequirementRepository
     {
-        private readonly AppDbContext _context;
+        private readonly UserDbContext _context;
 
-        public RequirementRepository(AppDbContext context)
+        public RequirementRepository(UserDbContext context)
         {
             _context = context;
         }
