@@ -1,24 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "D:\\repositorio\\facultad\\TrackIt\\BackEnd\\TrackIt_Backend\\trackit.server.csproj": {}
+    "D:\\Repositorios GitHub\\FACULTAD\\DISEÑO DE SISTEMAS\\TrackIt_Backend\\trackit.server.csproj": {}
   },
   "projects": {
-    "D:\\repositorio\\facultad\\TrackIt\\BackEnd\\TrackIt_Backend\\trackit.server.csproj": {
+    "D:\\Repositorios GitHub\\FACULTAD\\DISEÑO DE SISTEMAS\\TrackIt_Backend\\trackit.server.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\repositorio\\facultad\\TrackIt\\BackEnd\\TrackIt_Backend\\trackit.server.csproj",
+        "projectUniqueName": "D:\\Repositorios GitHub\\FACULTAD\\DISEÑO DE SISTEMAS\\TrackIt_Backend\\trackit.server.csproj",
         "projectName": "trackit.server",
-        "projectPath": "D:\\repositorio\\facultad\\TrackIt\\BackEnd\\TrackIt_Backend\\trackit.server.csproj",
-        "packagesPath": "C:\\Users\\lucho\\.nuget\\packages\\",
-        "outputPath": "D:\\repositorio\\facultad\\TrackIt\\BackEnd\\TrackIt_Backend\\obj\\",
+        "projectPath": "D:\\Repositorios GitHub\\FACULTAD\\DISEÑO DE SISTEMAS\\TrackIt_Backend\\trackit.server.csproj",
+        "packagesPath": "C:\\Users\\Pato\\.nuget\\packages\\",
+        "outputPath": "D:\\Repositorios GitHub\\FACULTAD\\DISEÑO DE SISTEMAS\\TrackIt_Backend\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\lucho\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Users\\Pato\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -50,6 +46,14 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "MailKit": {
+              "target": "Package",
+              "version": "[4.8.0, )"
+            },
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[8.0.11, )"
+            },
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {
               "target": "Package",
               "version": "[8.0.11, )"

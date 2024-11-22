@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using trackit.server.Models;
 
 public class AppDbContext : DbContext
