@@ -12,6 +12,8 @@ public class AppDbContext : DbContext
     public DbSet<Category> Categories { get; set; }
     public DbSet<RequirementRelation> RequirementRelations { get; set; }
     public DbSet<Priority> Priorities { get; set; } // Agrega esto
+    public DbSet<RequirementActionLog> RequirementActionLogs { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

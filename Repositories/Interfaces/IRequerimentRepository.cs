@@ -14,5 +14,8 @@ namespace trackit.server.Repositories.Interfaces
         // Nuevos métodos
         Task<bool> ValidateRequirementExistsAsync(int requirementId); // Validar existencia de requerimiento
         Task AddRequirementRelationAsync(int requirementId, int relatedRequirementId); // Agregar relación
+        Task<Requirement> GetByIdAsync(int id);
+        Task UpdateAsync(Requirement requirement);
+
     }
 }

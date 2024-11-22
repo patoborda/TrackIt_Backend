@@ -61,24 +61,40 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Register repositories and services
 builder.Services.AddScoped<IRequirementRepository, RequirementRepository>();
 builder.Services.AddScoped<IRequirementService, RequirementService>();
+builder.Services.AddScoped<IRequirementActionLogRepository, RequirementActionLogRepository>();
+builder.Services.AddScoped<IRequirementActionService, RequirementActionService>();
+builder.Services.AddSingleton<RequirementNotifier>();
+builder.Services.AddTransient<IRequirementObserver, ActionLogObserver>();
 
 var app = builder.Build();
 
+// Attach the observer to the notifier
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var notifier = services.GetRequiredService<RequirementNotifier>();
+    var observer = services.GetRequiredService<IRequirementObserver>();
+    notifier.Attach(observer); // Attach observer to notifier
+}
 // Configurar middleware para manejo de excepciones - Primer middleware en la cadena
 app.UseMiddleware<ExceptionHandlingMiddleware>();  // Aseg�rate de que este middleware est� registrado primero
 
-// Configurar Swagger
-app.UseSwagger();
-app.UseSwaggerUI();
 
+// Configure the HTTP request pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 // Middleware de autenticaci�n y autorizaci�n
 app.UseAuthentication();  // Primero autenticamos
 app.UseAuthorization();   // Luego autorizamos
 
+app.UseHttpsRedirection();
 // Mapeo de controladores
 app.MapControllers();
-
-// Ejecutar la aplicaci�n
 app.Run();

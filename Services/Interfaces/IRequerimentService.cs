@@ -6,5 +6,6 @@ namespace trackit.server.Services.Interfaces
     {
         Task<RequirementResponseDto> CreateRequirementAsync(RequirementCreateDto requirementDto); // Ya existente
         Task<bool> ValidateTypeAndCategoryAsync(int typeId, int categoryId); // Método para validar tipo y categoría
+    Task<RequirementResponseDto> UpdateRequirementAsync(int requirementId, RequirementUpdateDto updateDto, string userId);
     }
 }

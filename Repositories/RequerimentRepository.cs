@@ -64,5 +64,17 @@ namespace trackit.server.Repositories
             _context.RequirementRelations.Add(relation);
             await _context.SaveChangesAsync();
         }
+
+            public async Task<Requirement> GetByIdAsync(int id)
+            {
+                return await _context.Requirements.FindAsync(id);
+            }
+
+            public async Task UpdateAsync(Requirement requirement)
+            {
+                _context.Requirements.Update(requirement);
+                await _context.SaveChangesAsync();
+            }
+        }
+
     }
-}

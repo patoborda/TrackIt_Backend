@@ -8,10 +8,12 @@ namespace trackit.server.Services
     public class RequirementService : IRequirementService
     {
         private readonly IRequirementRepository _repository;
+        private readonly RequirementNotifier _notifier; // Patrón Observer
 
-        public RequirementService(IRequirementRepository repository)
+        public RequirementService(IRequirementRepository repository, RequirementNotifier notifier)
         {
             _repository = repository;
+            _notifier = notifier;
         }
 
         public async Task<RequirementResponseDto> CreateRequirementAsync(RequirementCreateDto requirementDto)
@@ -37,14 +39,13 @@ namespace trackit.server.Services
                 Code = generatedCode,
                 RequirementTypeId = requirementDto.RequirementTypeId,
                 CategoryId = requirementDto.CategoryId,
-                PriorityId = requirementDto.PriorityId,
+                PriorityId = requirementDto.PriorityId, // Puede ser null
                 Date = DateTime.UtcNow, // Fecha actual
                 Status = "Abierto" // Estado predeterminado
             };
 
             // Guardar el requerimiento en la base de datos
             var savedRequirement = await _repository.AddAsync(newRequirement);
-
 
             // Manejar requerimientos relacionados
             if (requirementDto.RelatedRequirementIds != null && requirementDto.RelatedRequirementIds.Any())
@@ -70,6 +71,8 @@ namespace trackit.server.Services
                 }
             }
 
+            // Notificar a los observadores (usando el patrón Observer)
+            _notifier.NotifyObservers(savedRequirement, "Creado", null, "Requirement created successfully.");
 
             // Preparar la respuesta
             return new RequirementResponseDto
@@ -80,9 +83,79 @@ namespace trackit.server.Services
                 Code = savedRequirement.Code,
                 RequirementType = await _repository.GetRequirementTypeNameAsync(savedRequirement.RequirementTypeId),
                 Category = await _repository.GetCategoryNameAsync(savedRequirement.CategoryId),
-                Priority = await _repository.GetPriorityNameAsync(savedRequirement.PriorityId),
+                Priority = savedRequirement.PriorityId.HasValue
+                    ? await _repository.GetPriorityNameAsync(savedRequirement.PriorityId.Value)
+                    : null,
                 Date = savedRequirement.Date,
                 Status = savedRequirement.Status
+            };
+        }
+
+        public async Task<RequirementResponseDto> UpdateRequirementAsync(int requirementId, RequirementUpdateDto updateDto, string userId)
+        {
+            // Obtener el requerimiento
+            var requirement = await _repository.GetByIdAsync(requirementId);
+            if (requirement == null)
+            {
+                throw new ArgumentException("Requirement not found.");
+            }
+
+            // Registrar los cambios
+            var details = new Dictionary<string, string>();
+
+            if (!string.IsNullOrEmpty(updateDto.Subject) && updateDto.Subject != requirement.Subject)
+            {
+                details.Add("Subject (Before)", requirement.Subject);
+                details.Add("Subject (After)", updateDto.Subject);
+                requirement.Subject = updateDto.Subject;
+            }
+
+            if (!string.IsNullOrEmpty(updateDto.Description) && updateDto.Description != requirement.Description)
+            {
+                details.Add("Description (Before)", requirement.Description);
+                details.Add("Description (After)", updateDto.Description);
+                requirement.Description = updateDto.Description;
+            }
+
+            if (updateDto.PriorityId.HasValue && updateDto.PriorityId != requirement.PriorityId)
+            {
+                var oldPriority = requirement.PriorityId.HasValue
+                    ? await _repository.GetPriorityNameAsync(requirement.PriorityId.Value)
+                    : "None";
+                var newPriority = await _repository.GetPriorityNameAsync(updateDto.PriorityId.Value);
+
+                details.Add("Priority (Before)", oldPriority);
+                details.Add("Priority (After)", newPriority);
+                requirement.PriorityId = updateDto.PriorityId.Value;
+            }
+
+            if (!string.IsNullOrEmpty(updateDto.Status) && updateDto.Status != requirement.Status)
+            {
+                details.Add("Status (Before)", requirement.Status);
+                details.Add("Status (After)", updateDto.Status);
+                requirement.Status = updateDto.Status;
+            }
+
+            // Guardar los cambios
+            await _repository.UpdateAsync(requirement);
+
+            // Notificar a los observadores (usando el patrón Observer)
+            _notifier.NotifyObservers(requirement, "Modificado", userId, string.Join(", ", details.Select(d => $"{d.Key}: {d.Value}")));
+
+            // Preparar y devolver la respuesta
+            return new RequirementResponseDto
+            {
+                Id = requirement.Id,
+                Subject = requirement.Subject,
+                Description = requirement.Description,
+                Code = requirement.Code,
+                RequirementType = await _repository.GetRequirementTypeNameAsync(requirement.RequirementTypeId),
+                Category = await _repository.GetCategoryNameAsync(requirement.CategoryId),
+                Priority = requirement.PriorityId.HasValue
+                    ? await _repository.GetPriorityNameAsync(requirement.PriorityId.Value)
+                    : null,
+                Date = requirement.Date,
+                Status = requirement.Status
             };
         }
 
