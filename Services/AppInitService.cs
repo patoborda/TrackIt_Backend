@@ -2,68 +2,77 @@
 using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
 using trackit.server.Models;
+using trackit.server.Data;
 
 public class AppInitializationService
 {
     private readonly UserManager<User> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
-    private readonly IConfiguration _configuration; // Inyectar IConfiguration
+    private readonly UserDbContext _context; // Inyectar ApplicationDbContext
+    private readonly IConfiguration _configuration;
 
-    public AppInitializationService(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+    public AppInitializationService(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, UserDbContext context, IConfiguration configuration)
     {
         _userManager = userManager;
         _roleManager = roleManager;
-        _configuration = configuration; // Guardar la configuración
+        _context = context;
+        _configuration = configuration;
     }
 
     public async Task CreateAdminIfNotExistsAsync()
     {
         // Leer las configuraciones desde appsettings.sensitive.json
-        var adminEmail = _configuration["AdminSettings:Email"]; // Asegúrate de que la clave esté correctamente configurada
-        var adminPassword = _configuration["AdminSettings:Password"]; // Y que la clave coincida
+        var adminEmail = _configuration["AdminSettings:Email"];
+        var adminPassword = _configuration["AdminSettings:Password"];
 
         if (string.IsNullOrEmpty(adminEmail) || string.IsNullOrEmpty(adminPassword))
         {
             throw new InvalidOperationException("Admin email or password is not configured.");
         }
 
+        // Verificar si el usuario Admin ya existe
         var user = await _userManager.FindByEmailAsync(adminEmail);
 
         if (user == null)
         {
-            // Crear un nuevo usuario admin si no existe
-            var adminUser = new AdminUser
+            // Crear el usuario base en AspNetUsers
+            var adminUser = new User
             {
                 UserName = adminEmail,
                 Email = adminEmail,
                 FirstName = "Admin",
                 LastName = "User",
-                IsEnabled = true,  // Asegúrate de que el admin esté habilitado
+                IsEnabled = true // El admin siempre está habilitado
             };
 
             var result = await _userManager.CreateAsync(adminUser, adminPassword);
 
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                // Verificar si el rol Admin existe, si no lo crea
-                var roleExists = await _roleManager.RoleExistsAsync("Admin");
-                if (!roleExists)
-                {
-                    var roleResult = await _roleManager.CreateAsync(new IdentityRole("Admin"));
-                    if (!roleResult.Succeeded)
-                    {
-                        throw new Exception("Error creating Admin role.");
-                    }
-                }
+                throw new Exception($"Error creating admin user: {string.Join(", ", result.Errors)}");
+            }
 
-                // Asignar el rol Admin al usuario
-                await _userManager.AddToRoleAsync(adminUser, "Admin");
-            }
-            else
+            // Crear la entrada correspondiente en la tabla AdminUsers
+            var adminDetails = new AdminUser
             {
-                throw new Exception("Error creating admin user.");
+                Id = adminUser.Id // Relación con el usuario base
+            };
+
+            _context.AdminUsers.Add(adminDetails);
+            await _context.SaveChangesAsync();
+
+            // Verificar si el rol "Admin" existe, si no lo crea
+            if (!await _roleManager.RoleExistsAsync("Admin"))
+            {
+                var roleResult = await _roleManager.CreateAsync(new IdentityRole("Admin"));
+                if (!roleResult.Succeeded)
+                {
+                    throw new Exception("Error creating Admin role.");
+                }
             }
+
+            // Asignar el rol Admin al usuario
+            await _userManager.AddToRoleAsync(adminUser, "Admin");
         }
     }
-
 }

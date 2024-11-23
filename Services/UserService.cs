@@ -167,17 +167,83 @@ namespace trackit.server.Services
 
         // Método para restablecer la contraseña (sin cambios)
        public async Task<bool> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
-{
-    var user = await _userRepository.GetUserByEmailAsync(resetPasswordDto.Email);
-    if (user == null)
-        throw new UserNotFoundException();
+        {
+            var user = await _userRepository.GetUserByEmailAsync(resetPasswordDto.Email);
+            if (user == null)
+                throw new UserNotFoundException();
 
-    var resetResult = await _userRepository.ResetPasswordAsync(user, resetPasswordDto.Token, resetPasswordDto.NewPassword);
-    if (!resetResult)
-        throw new InvalidOperationException("Password reset failed");
+            var resetResult = await _userRepository.ResetPasswordAsync(user, resetPasswordDto.Token, resetPasswordDto.NewPassword);
+            if (!resetResult)
+                throw new InvalidOperationException("Password reset failed");
 
-    return true;
-}
+            return true;
+        }
+
+        /*******************************************************************************/
+
+        public async Task<UserProfileDto> GetUserProfileAsync(string userId)
+        {
+            // Cargar el usuario desde el repositorio
+            var user = await _userRepository.GetUserWithRelationsByIdAsync(userId);
+
+            if (user == null)
+            {
+                throw new UserNotFoundException("User not found.");
+            }
+
+            // Crear el DTO correspondiente basado en el tipo de usuario
+            if (user.AdminUser != null)
+            {
+                return new AdminUserProfileDto
+                {
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email,
+                    UserName = user.UserName,
+                    IsEnabled = user.IsEnabled,
+                    AdminSpecificAttribute = "SomeAdminData"
+                };
+            }
+            else if (user.InternalUser != null)
+            {
+                return new InternalUserProfileDto
+                {
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email,
+                    UserName = user.UserName,
+                    IsEnabled = user.IsEnabled,
+                    Cargo = user.InternalUser.Cargo,
+                    Departamento = user.InternalUser.Departamento
+                };
+            }
+            else if (user.ExternalUser != null)
+            {
+                return new ExternalUserProfileDto
+                {
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email,
+                    UserName = user.UserName,
+                    IsEnabled = user.IsEnabled,
+                    Cuil = user.ExternalUser.Cuil,
+                    Empresa = user.ExternalUser.Empresa,
+                    Descripcion = user.ExternalUser.Descripcion
+                };
+            }
+
+            // Si no tiene roles específicos, devolver datos básicos
+            return new UserProfileDto
+            {
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                UserName = user.UserName,
+                IsEnabled = user.IsEnabled
+            };
+        }
+
+
 
     }
 }

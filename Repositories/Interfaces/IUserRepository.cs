@@ -16,6 +16,7 @@ namespace trackit.server.Repositories.Interfaces
         Task DeleteUserAsync(User user);  // Elimina un usuario
         Task<string> GeneratePasswordResetTokenAsync(User user);  // Genera token de restablecimiento
         Task<bool> ResetPasswordAsync(User user, string token, string newPassword);  // Restablece contraseña
+        Task<User> GetUserWithRelationsByIdAsync(string userId);
     }
 
 }

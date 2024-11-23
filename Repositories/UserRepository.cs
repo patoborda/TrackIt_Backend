@@ -4,6 +4,7 @@ using trackit.server.Repositories.Interfaces;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using trackit.server.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace trackit.server.Repositories
 {
@@ -74,6 +75,23 @@ namespace trackit.server.Repositories
             var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
             return result.Succeeded;
         }
+
+
+        /*****************************************************************************************************************/
+
+
+        public async Task<User> GetUserWithRelationsByIdAsync(string userId)
+        {
+            return await _userManager.Users
+                .Include(u => u.AdminUser)
+                .Include(u => u.InternalUser)
+                .Include(u => u.ExternalUser)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+        }
+
+
+
+
     }
 
 }

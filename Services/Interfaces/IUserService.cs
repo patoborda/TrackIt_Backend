@@ -10,6 +10,7 @@ namespace trackit.server.Services
         Task<bool> RegisterExternalUserAsync(RegisterExternalUserDto registerExternalUserDto);
         Task<bool> SendPasswordResetLinkAsync(string email);
         Task<bool> ResetPasswordAsync(ResetPasswordDto resetPasswordDto);
+        Task<UserProfileDto> GetUserProfileAsync(string userId);
     }
 
 }

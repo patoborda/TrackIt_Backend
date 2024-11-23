@@ -17,8 +17,11 @@ namespace trackit.server.Data
             public DbSet<RequirementRelation> RequirementRelations { get; set; }
             public DbSet<Priority> Priorities { get; set; } // Agrega esto
             public DbSet<RequirementActionLog> RequirementActionLogs { get; set; }
+            public DbSet<InternalUser> InternalUsers { get; set; } = null!;
+            public DbSet<ExternalUser> ExternalUsers { get; set; } = null!;
+            public DbSet<AdminUser> AdminUsers { get; set; } = null!;
 
-            protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
                 base.OnModelCreating(modelBuilder);
 
@@ -59,12 +62,31 @@ namespace trackit.server.Data
                     .HasForeignKey(rr => rr.RelatedRequirementId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-            // Seed Data
-            modelBuilder.Entity<RequirementType>().HasData(
-                    new RequirementType { Id = 1, Name = "Hardware" },
-                    new RequirementType { Id = 2, Name = "Software" },
-                    new RequirementType { Id = 3, Name = "Maintenance" }
-                );
+
+                // Configuración de la relación uno-a-uno entre User y AdminUser
+                modelBuilder.Entity<AdminUser>()
+                    .HasOne(admin => admin.User) // AdminUser tiene un User
+                    .WithOne(user => user.AdminUser) // User tiene un AdminUser
+                    .HasForeignKey<AdminUser>(admin => admin.Id); // La clave foránea está en AdminUser.Id
+
+                // Configuración de la relación uno-a-uno entre User y InternalUser
+                modelBuilder.Entity<InternalUser>()
+                    .HasOne(internalUser => internalUser.User)
+                    .WithOne(user => user.InternalUser)
+                    .HasForeignKey<InternalUser>(internalUser => internalUser.Id);
+
+                // Configuración de la relación uno-a-uno entre User y ExternalUser
+                modelBuilder.Entity<ExternalUser>()
+                    .HasOne(externalUser => externalUser.User)
+                    .WithOne(user => user.ExternalUser)
+                    .HasForeignKey<ExternalUser>(externalUser => externalUser.Id);
+
+                // Seed Data
+                modelBuilder.Entity<RequirementType>().HasData(
+                        new RequirementType { Id = 1, Name = "Hardware" },
+                        new RequirementType { Id = 2, Name = "Software" },
+                        new RequirementType { Id = 3, Name = "Maintenance" }
+                    );
 
                 modelBuilder.Entity<Category>().HasData(
                     new Category { Id = 1, Name = "Hardware Malfunction", RequirementTypeId = 1 },

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using trackit.server.Models;
 using System.Security.Claims;
 using static trackit.server.Dtos.RegisterUserDto;
+using Microsoft.EntityFrameworkCore;
 
 namespace trackit.server.Controllers
 {
@@ -103,43 +104,7 @@ namespace trackit.server.Controllers
             {
                 return StatusCode(500, new { message = ex.Message });
             }
-        }
-
-        // Acción para confirmar el correo electrónico
-        [HttpGet("confirm-email")]
-        public async Task<IActionResult> ConfirmEmail(string userId, string token)
-        {
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
-            {
-                return BadRequest("Invalid email confirmation request.");
-            }
-
-            // Decodificar el token (importante si está codificado en el enlace)
-            token = Uri.UnescapeDataString(token);
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return BadRequest("User not found.");
-            }
-
-            Console.WriteLine($"User found: {user.Email}");
-            Console.WriteLine($"Email confirmed: {user.EmailConfirmed}");
-
-            var result = await _userManager.ConfirmEmailAsync(user, token);
-            if (result.Succeeded)
-            {
-                Console.WriteLine("Email confirmed successfully.");
-                return Ok("Email confirmed successfully.");
-            }
-            else
-            {
-                Console.WriteLine($"Error confirming email: {result.Errors.FirstOrDefault()?.Description}");
-                return BadRequest("Error confirming email.");
-            }
-        }
-
-
+        }  
 
         // Endpoint para enviar el enlace de recuperación de contraseña
         [HttpPost("forgot-password")]
@@ -187,13 +152,12 @@ namespace trackit.server.Controllers
             }
         }
 
-        // Endpoint para obtener el perfil del usuario autenticado
+        /******************************************************************************************************************/
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
             try
             {
-                // Obtener el ID del usuario de las claims del JWT
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
                 if (string.IsNullOrEmpty(userId))
@@ -201,43 +165,54 @@ namespace trackit.server.Controllers
                     return Unauthorized("User ID not found.");
                 }
 
-                // Obtener el usuario desde la base de datos usando el UserManager
-                var user = await _userManager.FindByIdAsync(userId);
-
-                if (user == null)
-                {
-                    return NotFound("User not found.");
-                }
-
-                // Verificar si alguna propiedad importante del usuario es null
-                if (string.IsNullOrEmpty(user.FirstName) || string.IsNullOrEmpty(user.LastName) || string.IsNullOrEmpty(user.Email) || string.IsNullOrEmpty(user.UserName))
-                {
-                    throw new UserProfileException("User profile contains null or empty values for critical properties.");
-                }
-
-                // Mapear la información del usuario al DTO
-                var userProfile = new UserProfileDto
-                {
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Email = user.Email,
-                    UserName = user.UserName
-                };
-
+                var userProfile = await _userService.GetUserProfileAsync(userId);
                 return Ok(userProfile);
             }
-            catch (UserProfileException ex)
+            catch (UserNotFoundException)
             {
-                return StatusCode(400, new { message = ex.Message }); // Código 400 Bad Request
+                return NotFound("User not found.");
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = ex.Message }); // Código 500 Internal Server Error
+                return StatusCode(500, new { message = ex.Message });
             }
         }
 
+        /******************************************************************************************************************/
 
+        // Acción para confirmar el correo electrónico
+        [HttpGet("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+            {
+                return BadRequest("Invalid email confirmation request.");
+            }
 
+            // Decodificar el token (importante si está codificado en el enlace)
+            token = Uri.UnescapeDataString(token);
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return BadRequest("User not found.");
+            }
+
+            Console.WriteLine($"User found: {user.Email}");
+            Console.WriteLine($"Email confirmed: {user.EmailConfirmed}");
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+            {
+                Console.WriteLine("Email confirmed successfully.");
+                return Ok("Email confirmed successfully.");
+            }
+            else
+            {
+                Console.WriteLine($"Error confirming email: {result.Errors.FirstOrDefault()?.Description}");
+                return BadRequest("Error confirming email.");
+            }
+        }   
 
         [HttpGet("test-email")]
         public async Task<IActionResult> TestEmail()
