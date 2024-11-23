@@ -77,9 +77,6 @@ namespace trackit.server.Repositories
         }
 
 
-        /*****************************************************************************************************************/
-
-
         public async Task<User> GetUserWithRelationsByIdAsync(string userId)
         {
             return await _userManager.Users
@@ -89,6 +86,35 @@ namespace trackit.server.Repositories
                 .FirstOrDefaultAsync(u => u.Id == userId);
         }
 
+
+        /**************************************************************/
+        public async Task<List<User>> GetUsersExcludingAdminsAsync()
+        {
+            // Obtener usuarios, excluyendo los administradores (usuarios con relación a AdminUser)
+            return await _userManager.Users
+                .Where(u => u.AdminUser == null)  // Excluir administradores (no deben tener relación con AdminUser)
+                .Include(u => u.InternalUser) // Incluir relaciones de usuarios internos
+                .Include(u => u.ExternalUser) // Incluir relaciones de usuarios externos
+                .ToListAsync();
+        }
+
+        // Método para obtener solo los usuarios externos habilitados
+        public async Task<List<User>> GetExternalUsersAsync()
+        {
+            return await _userManager.Users
+                .Where(u => u.ExternalUser != null)  // Solo externos habilitados
+                .Include(u => u.ExternalUser)  // Incluir relación con ExternalUser
+                .ToListAsync();
+        }
+
+        // Método para obtener solo los usuarios internos habilitados
+        public async Task<List<User>> GetInternalUsersAsync()
+        {
+            return await _userManager.Users
+                .Where(u => u.InternalUser != null)  // Solo internos habilitados
+                .Include(u => u.InternalUser)  // Incluir relación con InternalUser
+                .ToListAsync();
+        }
 
 
 

@@ -152,7 +152,6 @@ namespace trackit.server.Controllers
             }
         }
 
-        /******************************************************************************************************************/
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
@@ -177,8 +176,6 @@ namespace trackit.server.Controllers
                 return StatusCode(500, new { message = ex.Message });
             }
         }
-
-        /******************************************************************************************************************/
 
         // Acción para confirmar el correo electrónico
         [HttpGet("confirm-email")]
@@ -231,6 +228,73 @@ namespace trackit.server.Controllers
                 return StatusCode(500, $"Error sending email: {ex.Message}");
             }
         }
+
+
+
+        /*******************************************************************************************************************/
+        [HttpGet("GetAllUsers")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            try
+            {
+                // Obtener todos los usuarios excluyendo administradores
+                var users = await _userService.GetAllUsersAsync();  // Obtener todos los usuarios y mapear a DTO
+
+                if (users == null || !users.Any())
+                {
+                    return NotFound("No users found.");
+                }
+
+                return Ok(users);  // Devolver los usuarios con sus respectivos DTOs
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // Endpoint para obtener los usuarios externos habilitados
+        [HttpGet("GetExternalUsers")]
+        public async Task<IActionResult> GetExternalUsers()
+        {
+            try
+            {
+                var externalUsers = await _userService.GetExternalUsersAsync();
+
+                if (externalUsers == null || !externalUsers.Any())
+                {
+                    return NotFound("No external users found.");
+                }
+
+                return Ok(externalUsers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // Endpoint para obtener los usuarios internos habilitados
+        [HttpGet("GetInternalUsers")]
+        public async Task<IActionResult> GetInternalUsers()
+        {
+            try
+            {
+                var internalUsers = await _userService.GetInternalUsersAsync();
+
+                if (internalUsers == null || !internalUsers.Any())
+                {
+                    return NotFound("No internal users found.");
+                }
+
+                return Ok(internalUsers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
 
     }
 }

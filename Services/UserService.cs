@@ -179,8 +179,6 @@ namespace trackit.server.Services
             return true;
         }
 
-        /*******************************************************************************/
-
         public async Task<UserProfileDto> GetUserProfileAsync(string userId)
         {
             // Cargar el usuario desde el repositorio
@@ -243,6 +241,68 @@ namespace trackit.server.Services
             };
         }
 
+
+        /******************************************************************************************************/
+
+        public async Task<List<UserProfileDto>> GetAllUsersAsync()
+        {
+            // Obtener todos los usuarios (excepto administradores)
+            var users = await _userRepository.GetUsersExcludingAdminsAsync();
+
+            // Usar GetUserProfileAsync para mapear a los DTOs de cada usuario
+            var userDtos = new List<UserProfileDto>();
+
+            foreach (var user in users)
+            {
+                var userProfile = await GetUserProfileAsync(user.Id); // Llamada al método existente para obtener el perfil
+                userDtos.Add(userProfile);
+            }
+
+            return userDtos;
+        }
+
+        // Obtener todos los usuarios externos habilitados
+    public async Task<List<ExternalUserProfileDto>> GetExternalUsersAsync()
+    {
+        // Obtener usuarios externos habilitados desde el repositorio
+        var externalUsers = await _userRepository.GetExternalUsersAsync();
+
+        // Mapear a DTO de usuarios externos
+        var userDtos = externalUsers.Select(u => new ExternalUserProfileDto
+        {
+            FirstName = u.FirstName,
+            LastName = u.LastName,
+            Email = u.Email,
+            UserName = u.UserName,
+            IsEnabled = u.IsEnabled,
+            Cuil = u.ExternalUser?.Cuil,
+            Empresa = u.ExternalUser?.Empresa,
+            Descripcion = u.ExternalUser?.Descripcion
+        }).ToList();
+
+        return userDtos;
+    }
+
+    // Obtener todos los usuarios internos habilitados
+    public async Task<List<InternalUserProfileDto>> GetInternalUsersAsync()
+    {
+        // Obtener usuarios internos habilitados desde el repositorio
+        var internalUsers = await _userRepository.GetInternalUsersAsync();
+
+        // Mapear a DTO de usuarios internos
+        var userDtos = internalUsers.Select(u => new InternalUserProfileDto
+        {
+            FirstName = u.FirstName,
+            LastName = u.LastName,
+            Email = u.Email,
+            UserName = u.UserName,
+            IsEnabled = u.IsEnabled,
+            Cargo = u.InternalUser?.Cargo,
+            Departamento = u.InternalUser?.Departamento
+        }).ToList();
+
+        return userDtos;
+    }
 
 
     }
