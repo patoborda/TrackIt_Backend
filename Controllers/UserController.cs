@@ -7,6 +7,7 @@ using trackit.server.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using trackit.server.Models;
 using System.Security.Claims;
+using static trackit.server.Dtos.RegisterUserDto;
 
 namespace trackit.server.Controllers
 {
@@ -27,12 +28,40 @@ namespace trackit.server.Controllers
         }
 
         // Endpoint para registrar un nuevo usuario
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterUserDto registerUserDto)
+        [HttpPost("register-internal")]
+        public async Task<IActionResult> RegisterInternal([FromBody] RegisterInternalUserDto registerInternalUserDto)
         {
             try
             {
-                var result = await _userService.RegisterUserAsync(registerUserDto);
+                var result = await _userService.RegisterInternalUserAsync(registerInternalUserDto);
+                if (result)
+                {
+                    return Ok(new { message = "User registered successfully!" });
+                }
+                return BadRequest(new { message = "Failed to register user." });
+            }
+            catch (UserCreationException)
+            {
+                return BadRequest(new { message = "User could not be created." });
+            }
+            catch (PasswordMismatchException)
+            {
+                return BadRequest(new { message = "Passwords do not match." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+
+        // Endpoint para registrar un nuevo usuario
+        [HttpPost("register-external")]
+        public async Task<IActionResult> RegisterExternal([FromBody] RegisterExternalUserDto registerExternalUserDto)
+        {
+            try
+            {
+                var result = await _userService.RegisterExternalUserAsync(registerExternalUserDto);
                 if (result)
                 {
                     return Ok(new { message = "User registered successfully!" });

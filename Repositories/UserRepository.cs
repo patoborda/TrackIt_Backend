@@ -10,10 +10,12 @@ namespace trackit.server.Repositories
     public class UserRepository : IUserRepository
     {
         private readonly UserManager<User> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
-        public UserRepository(UserManager<User> userManager)
+        public UserRepository(UserManager<User> userManager, RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         public async Task<User> GetUserByEmailAsync(string email)
@@ -21,12 +23,10 @@ namespace trackit.server.Repositories
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
             {
-                // Lanza una excepción que será capturada por el middleware
                 throw new UserNotFoundException("User not found with the provided email.");
             }
             return user;
         }
-
 
         public async Task<bool> CreateUserAsync(User user, string password)
         {
@@ -44,5 +44,36 @@ namespace trackit.server.Repositories
         {
             return await _userManager.GetRolesAsync(user);
         }
+
+        public async Task<bool> RoleExistsAsync(string roleName)
+        {
+            return await _roleManager.RoleExistsAsync(roleName);
+        }
+
+        public async Task AssignRoleAsync(User user, string roleName)
+        {
+            var result = await _userManager.AddToRoleAsync(user, roleName);
+            if (!result.Succeeded)
+            {
+                throw new Exception($"Error assigning role {roleName} to user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+        }
+
+        public async Task DeleteUserAsync(User user)
+        {
+            await _userManager.DeleteAsync(user);
+        }
+
+        public async Task<string> GeneratePasswordResetTokenAsync(User user)
+        {
+            return await _userManager.GeneratePasswordResetTokenAsync(user);
+        }
+
+        public async Task<bool> ResetPasswordAsync(User user, string token, string newPassword)
+        {
+            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+            return result.Succeeded;
+        }
     }
+
 }

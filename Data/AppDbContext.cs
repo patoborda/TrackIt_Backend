@@ -59,8 +59,8 @@ namespace trackit.server.Data
                     .HasForeignKey(rr => rr.RelatedRequirementId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Seed Data
-                modelBuilder.Entity<RequirementType>().HasData(
+            // Seed Data
+            modelBuilder.Entity<RequirementType>().HasData(
                     new RequirementType { Id = 1, Name = "Hardware" },
                     new RequirementType { Id = 2, Name = "Software" },
                     new RequirementType { Id = 3, Name = "Maintenance" }

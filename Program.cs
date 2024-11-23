@@ -8,17 +8,17 @@ using trackit.server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using trackit.server.Middlewares;  // Importa la carpeta donde tienes el middleware
+using trackit.server.Middlewares;
 using trackit.server.Services.Interfaces;
-
-
+using trackit.server.Factories;
+using trackit.server.Factories.UserFactories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
+// Configurar logging
 builder.Services.AddLogging(configure => configure.AddConsole());
 
-// Configurar la conexi�n con la base de datos
+// Configurar la conexión con la base de datos
 builder.Services.AddDbContext<UserDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -27,18 +27,25 @@ builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<UserDbContext>()
     .AddDefaultTokenProviders();
 
-// Obtener la clave JWT de la configuraci�n
+// Cargar appsettings.json y appsettings.sensitive.json
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("appsettings.sensitive.json", optional: true, reloadOnChange: true)  // Asegúrate de que se carga el archivo sensitive
+    .AddEnvironmentVariables();  // Si también quieres cargar variables de entorno
+
+// Ahora obtén la clave JWT
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrEmpty(jwtKey))
 {
-    throw new InvalidOperationException("JWT Key is not configured in appsettings.json");
+    throw new InvalidOperationException("JWT Key is not configured in appsettings.json or environment.");
 }
 
 // Configurar JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false;  // Puedes ponerlo en true en producci�n
+        options.RequireHttpsMetadata = false;  // Puedes ponerlo en true en producción
         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -50,51 +57,63 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
- 
-// Inyecci�n de dependencias
+// Inyección de dependencias
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IEmailService, EmailService>();  // Registro del servicio de correo
+builder.Services.AddScoped<IEmailService, EmailService>();  // Servicio de correo
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Registrar las factorías específicas
+builder.Services.AddScoped<IInternalUserFactory, InternalUserFactory>();
+builder.Services.AddScoped<IExternalUserFactory, ExternalUserFactory>();
 
 // Configurar controladores y Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Register repositories and services
+// Registrar repositorios y servicios para Requirements
 builder.Services.AddScoped<IRequirementRepository, RequirementRepository>();
 builder.Services.AddScoped<IRequirementService, RequirementService>();
 builder.Services.AddScoped<IRequirementActionLogRepository, RequirementActionLogRepository>();
 builder.Services.AddScoped<IRequirementActionService, RequirementActionService>();
 builder.Services.AddSingleton<RequirementNotifier>();
 builder.Services.AddTransient<IRequirementObserver, ActionLogObserver>();
+builder.Services.AddTransient<AppInitializationService>(); // Servicio de inicialización
 
 var app = builder.Build();
 
-// Attach the observer to the notifier
+// Configurar middleware para manejo de excepciones
+app.UseMiddleware<ExceptionHandlingMiddleware>();  // Middleware de manejo de excepciones debe estar primero
+
+// Ejecutar la creación del Admin si no existe al iniciar la aplicación
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    var notifier = services.GetRequiredService<RequirementNotifier>();
-    var observer = services.GetRequiredService<IRequirementObserver>();
-    notifier.Attach(observer); // Attach observer to notifier
+    var appInitializationService = scope.ServiceProvider.GetRequiredService<AppInitializationService>();
+    await appInitializationService.CreateAdminIfNotExistsAsync(); // Crear admin
 }
-// Configurar middleware para manejo de excepciones - Primer middleware en la cadena
-app.UseMiddleware<ExceptionHandlingMiddleware>();  // Aseg�rate de que este middleware est� registrado primero
 
+// Configurar roles
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    await RoleSeeder.SeedRoles(roleManager); // Sembrar roles si es necesario
+}
 
-// Configure the HTTP request pipeline
+// Configurar la tubería de solicitudes HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-// Middleware de autenticaci�n y autorizaci�n
+
+// Middleware de autenticación y autorización
 app.UseAuthentication();  // Primero autenticamos
 app.UseAuthorization();   // Luego autorizamos
 
+// Redirigir a HTTPS si es necesario
 app.UseHttpsRedirection();
+
 // Mapeo de controladores
 app.MapControllers();
 app.Run();
