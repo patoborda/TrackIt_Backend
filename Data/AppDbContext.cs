@@ -81,6 +81,8 @@ namespace trackit.server.Data
                     .WithOne(user => user.ExternalUser)
                     .HasForeignKey<ExternalUser>(externalUser => externalUser.Id);
 
+
+                
                 // Seed Data
                 modelBuilder.Entity<RequirementType>().HasData(
                         new RequirementType { Id = 1, Name = "Hardware" },
