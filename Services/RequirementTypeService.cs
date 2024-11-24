@@ -35,15 +35,21 @@ namespace trackit.server.Services
             return new RequirementTypeDto { Id = createdType.Id, Name = createdType.Name };
         }
 
-        public async Task<RequirementTypeDto> UpdateAsync(int id, RequirementTypeDto dto)
+        public async Task<RequirementTypeDto> UpdateAsync(int id, string name)
         {
             var existingType = await _repository.GetByIdAsync(id);
             if (existingType == null) throw new KeyNotFoundException("RequirementType not found");
 
-            existingType.Name = dto.Name;
+            existingType.Name = name;
+
             var updatedType = await _repository.UpdateAsync(existingType);
-            return new RequirementTypeDto { Id = updatedType.Id, Name = updatedType.Name };
+            return new RequirementTypeDto
+            {
+                Id = updatedType.Id,
+                Name = updatedType.Name
+            };
         }
+
 
         public async Task<bool> DeleteAsync(int id)
         {

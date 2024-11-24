@@ -39,11 +39,11 @@ namespace trackit.server.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] RequirementTypeDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] RequirementTypeUpdateDto dto)
         {
             try
             {
-                var updatedType = await _service.UpdateAsync(id, dto);
+                var updatedType = await _service.UpdateAsync(id, dto.Name);
                 return Ok(updatedType);
             }
             catch (KeyNotFoundException)
@@ -51,6 +51,7 @@ namespace trackit.server.Controllers
                 return NotFound();
             }
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)

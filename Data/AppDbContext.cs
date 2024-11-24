@@ -99,9 +99,10 @@ namespace trackit.server.Data
                 );
                 // Seed Data para Priority
                 modelBuilder.Entity<Priority>().HasData(
-                    new Priority { Id = 1, TypePrority = "Alta" },
-                    new Priority { Id = 2, TypePrority = "Media" },
-                    new Priority { Id = 3, TypePrority = "Baja" }
+                    new Priority { Id = 4, TypePriority = "Urgente" },
+                    new Priority { Id = 1, TypePriority = "Alta" },
+                    new Priority { Id = 2, TypePriority = "Media" },
+                    new Priority { Id = 3, TypePriority = "Baja" }
                 );
             }
 

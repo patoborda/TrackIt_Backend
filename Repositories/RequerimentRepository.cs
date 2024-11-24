@@ -46,7 +46,7 @@ namespace trackit.server.Repositories
         public async Task<string> GetPriorityNameAsync(int priorityId)
         {
             var priority = await _context.Priorities.FindAsync(priorityId);
-            return priority?.TypePrority ?? "Unknown";
+            return priority?.TypePriority ?? "Unknown";
         }
 
         public async Task<bool> ValidateRequirementExistsAsync(int requirementId)

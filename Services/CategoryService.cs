@@ -56,16 +56,15 @@ namespace trackit.server.Services
             };
         }
 
-        public async Task<CategoryDto> UpdateAsync(int id, CategoryDto dto)
+        public async Task<CategoryDto> UpdateAsync(int id, string name, int requirementTypeId)
         {
             var existingCategory = await _repository.GetByIdAsync(id);
             if (existingCategory == null) throw new KeyNotFoundException("Category not found");
 
-            existingCategory.Name = dto.Name;
-            existingCategory.RequirementTypeId = dto.RequirementTypeId;
+            existingCategory.Name = name;
+            existingCategory.RequirementTypeId = requirementTypeId;
 
             var updatedCategory = await _repository.UpdateAsync(existingCategory);
-
             return new CategoryDto
             {
                 Id = updatedCategory.Id,
@@ -73,6 +72,7 @@ namespace trackit.server.Services
                 RequirementTypeId = updatedCategory.RequirementTypeId
             };
         }
+
 
         public async Task<bool> DeleteAsync(int id)
         {

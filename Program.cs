@@ -99,6 +99,8 @@ builder.Services.AddScoped<IRequirementTypeRepository, RequirementTypeRepository
 builder.Services.AddScoped<IRequirementTypeService, RequirementTypeService>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IPriorityService, PriorityService>();
+builder.Services.AddScoped<IPriorityRepository, PriorityRepository>();
 
 
 
