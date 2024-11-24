@@ -56,10 +56,16 @@ namespace trackit.server.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var success = await _service.DeleteAsync(id);
-            if (!success) return NotFound();
-
-            return NoContent();
+            if (success)
+            {
+                return Ok(new { message = $"RequirementType with ID {id} was successfully deleted." });
+            }
+            else
+            {
+                return NotFound(new { message = $"RequirementType with ID {id} was not found." });
+            }
         }
+
     }
 
 }

@@ -1,8 +1,9 @@
 ﻿using trackit.server.Dtos;
 using trackit.server.Models;
 using trackit.server.Repositories.Interfaces;
+using trackit.server.Services.Interfaces;
 
-namespace trackit.server.Services.Interfaces
+namespace trackit.server.Services
 {
     public class RequirementTypeService : IRequirementTypeService
     {

@@ -97,6 +97,9 @@ builder.Services.AddTransient<IRequirementObserver, ActionLogObserver>();
 builder.Services.AddTransient<AppInitializationService>(); // Servicio de inicialización
 builder.Services.AddScoped<IRequirementTypeRepository, RequirementTypeRepository>();
 builder.Services.AddScoped<IRequirementTypeService, RequirementTypeService>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+
 
 
 var app = builder.Build();
