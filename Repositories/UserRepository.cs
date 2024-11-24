@@ -22,6 +22,10 @@ namespace trackit.server.Repositories
             _userDbContext = userDbContext;
         }
 
+        public async Task<User> GetUserByIdAsync(string userId)
+        {
+            return await _userManager.FindByIdAsync(userId);
+        }
         public async Task<User> GetUserByEmailAsync(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
@@ -68,25 +72,31 @@ namespace trackit.server.Repositories
             await _userManager.DeleteAsync(user);
         }
 
+
         public async Task<string> GeneratePasswordResetTokenAsync(User user)
         {
             return await _userManager.GeneratePasswordResetTokenAsync(user);
         }
 
-        public async Task<bool> ResetPasswordAsync(User user, string token, string newPassword)
+        public async Task<IdentityResult> ResetPasswordAsync(User user, string token, string newPassword)
         {
-            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
-            return result.Succeeded;
+            return await _userManager.ResetPasswordAsync(user, token, newPassword);
         }
+
 
 
         public async Task<User> GetUserWithRelationsByIdAsync(string userId)
         {
-            return await _userManager.Users
+            var user = await _userManager.Users
                 .Include(u => u.AdminUser)
                 .Include(u => u.InternalUser)
                 .Include(u => u.ExternalUser)
                 .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+                throw new UserNotFoundException("User not found with the provided UserId.");
+
+            return user;
         }
 
         public async Task<List<User>> GetUsersExcludingAdminsAsync()

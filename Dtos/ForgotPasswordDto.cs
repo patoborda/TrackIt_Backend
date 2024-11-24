@@ -1,7 +1,13 @@
-﻿namespace trackit.server.Dtos
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace trackit.server.Dtos
 {
     public class ForgotPasswordDto
     {
-        public required string Email { get; set; }
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = null!;
+
+        public string ClientUri { get; set; } = null!;
     }
 }

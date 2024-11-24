@@ -24,13 +24,15 @@ namespace trackit.server.Dtos
         public required string ConfirmPassword { get; set; }
 
         // Para usuarios internos
-         public class RegisterInternalUserDto : RegisterUserDto
+        public class RegisterInternalUserDto : RegisterUserDto
         {
             [Required(ErrorMessage = "Cargo is required")]
             public required string Cargo { get; set; }
 
             [Required(ErrorMessage = "Departamento is required")]
             public required string Departamento { get; set; }
+
+            public string ClientUri { get; set; }
         }
 
         // Para usuarios externos
@@ -44,6 +46,8 @@ namespace trackit.server.Dtos
 
             [Required(ErrorMessage = "Descripcion is required")]
             public required string Descripcion { get; set; }
+
+            public string ClientUri { get; set; }
         }
     }
 }

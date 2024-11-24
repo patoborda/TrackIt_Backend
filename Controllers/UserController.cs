@@ -28,22 +28,21 @@ namespace trackit.server.Controllers
             _emailService = emailService;
         }
 
-        // Endpoint para registrar un nuevo usuario
+        /// Endpoint para registrar un nuevo usuario interno.
         [HttpPost("register-internal")]
         public async Task<IActionResult> RegisterInternal([FromBody] RegisterInternalUserDto registerInternalUserDto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             try
             {
                 var result = await _userService.RegisterInternalUserAsync(registerInternalUserDto);
                 if (result)
                 {
-                    return Ok(new { message = "User registered successfully!" });
+                    return Ok(new { message = "User registered successfully! Please check your email to confirm your account." });
                 }
                 return BadRequest(new { message = "Failed to register user." });
-            }
-            catch (UserCreationException)
-            {
-                return BadRequest(new { message = "User could not be created." });
             }
             catch (PasswordMismatchException)
             {
@@ -56,22 +55,21 @@ namespace trackit.server.Controllers
         }
 
 
-        // Endpoint para registrar un nuevo usuario
+        /// Endpoint para registrar un nuevo usuario externo.
         [HttpPost("register-external")]
         public async Task<IActionResult> RegisterExternal([FromBody] RegisterExternalUserDto registerExternalUserDto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             try
             {
                 var result = await _userService.RegisterExternalUserAsync(registerExternalUserDto);
                 if (result)
                 {
-                    return Ok(new { message = "User registered successfully!" });
+                    return Ok(new { message = "User registered successfully! Please check your email to confirm your account." });
                 }
                 return BadRequest(new { message = "Failed to register user." });
-            }
-            catch (UserCreationException)
-            {
-                return BadRequest(new { message = "User could not be created." });
             }
             catch (PasswordMismatchException)
             {
@@ -92,65 +90,88 @@ namespace trackit.server.Controllers
                 var token = await _authService.LoginUserAsync(loginUserDto);
                 return Ok(new { token });
             }
-            catch (UserNotFoundException)
-            {
-                return NotFound(new { message = "User not found." });
-            }
-            catch (InvalidLoginException)
-            {
-                return Unauthorized(new { message = "Invalid login credentials." });
-            }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = ex.Message });
+                // Manejar excepciones específicas basadas en el mensaje
+                if (ex.InnerException is EmailNotConfirmedException)
+                {
+                    return Unauthorized(new { message = "Please confirm your email before logging in." });
+                }
+                else if (ex.InnerException is UserNotEnabledException)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new { message = "Your account is not enabled. Please contact the administrator." });
+                }
+                else if (ex.InnerException is UserNotFoundException)
+                {
+                    return NotFound(new { message = "User not found." });
+                }
+                else if (ex.InnerException is InvalidLoginException)
+                {
+                    return Unauthorized(new { message = "Invalid login credentials." });
+                }
+                else
+                {
+                    return StatusCode(500, new { message = ex.Message });
+                }
             }
-        }  
+        }
 
         // Endpoint para enviar el enlace de recuperación de contraseña
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             try
             {
-                var result = await _userService.SendPasswordResetLinkAsync(forgotPasswordDto.Email);
+                var result = await _userService.SendPasswordResetLinkAsync(forgotPasswordDto.Email, forgotPasswordDto.ClientUri);
                 return Ok(new { message = "Password reset link sent successfully" });
             }
             catch (UserNotFoundException)
             {
                 return NotFound(new { message = "User not found" });
             }
+            catch (EmailSendException ex)
+            {
+                // Puedes loguear ex.Message aquí si lo deseas
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
             catch (Exception)
             {
-                return StatusCode(500, new { message = "An error occurred while sending the password reset link" });
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while sending the password reset link" });
             }
         }
+
 
 
         // Endpoint para restablecer la contraseña
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
         {
-            if (resetPasswordDto.NewPassword != resetPasswordDto.ConfirmPassword)
-                return BadRequest(new { message = "Passwords do not match" });
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
                 var result = await _userService.ResetPasswordAsync(resetPasswordDto);
-                return Ok(new { message = "Password reset successfully" });
+                return Ok(new { message = "Password reset successfully." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
             catch (UserNotFoundException)
             {
-                return NotFound(new { message = "User not found" });
+                return NotFound(new { message = "User not found." });
             }
-            catch (InvalidOperationException)
+            catch (Exception ex)
             {
-                return BadRequest(new { message = "Invalid token or password reset failed" });
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "An error occurred while resetting the password" });
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while resetting the password", details = ex.Message });
             }
         }
+
+
 
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()

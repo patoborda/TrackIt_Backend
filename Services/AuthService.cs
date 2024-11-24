@@ -34,18 +34,24 @@ namespace trackit.server.Services
                 // Verificar que el usuario existe
                 var user = await _userRepository.GetUserByEmailAsync(loginUserDto.Email);
                 if (user == null)
-                    throw new UserNotFoundException();  // Excepción personalizada
+                    throw new UserNotFoundException();
 
                 // Verificar si el correo está confirmado
                 if (!user.EmailConfirmed)
                 {
-                    throw new Exception("Email not confirmed. Please confirm your email before logging in.");
+                    throw new EmailNotConfirmedException();
+                }
+
+                // Verificar si el usuario está habilitado
+                if (!user.IsEnabled)
+                {
+                    throw new UserNotEnabledException();
                 }
 
                 // Validar las credenciales del usuario
                 var result = await _signInManager.PasswordSignInAsync(user, loginUserDto.Password, false, false);
                 if (!result.Succeeded)
-                    throw new InvalidLoginException();  // Excepción personalizada
+                    throw new InvalidLoginException();
 
                 // Si el login es exitoso, generar el JWT
                 return GenerateJwtToken(user);
@@ -53,6 +59,14 @@ namespace trackit.server.Services
             catch (UserNotFoundException ex)
             {
                 throw new Exception("User not found.", ex);
+            }
+            catch (EmailNotConfirmedException ex)
+            {
+                throw new Exception("Email not confirmed. Please confirm your email before logging in.", ex);
+            }
+            catch (UserNotEnabledException ex)
+            {
+                throw new Exception("User account is not enabled. Please contact the administrator.", ex);
             }
             catch (InvalidLoginException ex)
             {
@@ -81,10 +95,10 @@ namespace trackit.server.Services
                 // Crear las claims
                 var claims = new[]
                 {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Name, user.UserName),
-            new Claim(ClaimTypes.Email, user.Email)
-        };
+                    new Claim(ClaimTypes.NameIdentifier, user.Id),
+                    new Claim(ClaimTypes.Name, user.UserName),
+                    new Claim(ClaimTypes.Email, user.Email)
+                };
 
                 // Obtener la clave secreta
                 var jwtKey = _configuration["Jwt:Key"];
@@ -115,7 +129,5 @@ namespace trackit.server.Services
                 throw new JwtGenerationException();
             }
         }
-
-
     }
 }

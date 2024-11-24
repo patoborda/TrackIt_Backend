@@ -8,6 +8,7 @@ namespace trackit.server.Repositories.Interfaces
     public interface IUserRepository
     {
         Task<User> GetUserByEmailAsync(string email);
+        Task<User> GetUserByIdAsync(string userId);
         Task<bool> CreateUserAsync(User user, string password);
         Task<bool> UpdateUserAsync(User user);
         Task<IList<string>> GetUserRolesAsync(User user);
@@ -15,7 +16,7 @@ namespace trackit.server.Repositories.Interfaces
         Task AssignRoleAsync(User user, string roleName);  // Asigna un rol a un usuario
         Task DeleteUserAsync(User user);  // Elimina un usuario
         Task<string> GeneratePasswordResetTokenAsync(User user);  // Genera token de restablecimiento
-        Task<bool> ResetPasswordAsync(User user, string token, string newPassword);  // Restablece contraseña
+        Task<IdentityResult> ResetPasswordAsync(User user, string token, string newPassword);  // Restablece contraseña
         Task<User> GetUserWithRelationsByIdAsync(string userId);
         Task<List<User>> GetUsersExcludingAdminsAsync();
         Task<List<User>> GetExternalUsersAsync();

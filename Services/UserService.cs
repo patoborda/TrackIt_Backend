@@ -66,11 +66,11 @@ namespace trackit.server.Services
                     // Si el rol no existe, eliminar el usuario creado
                     await _userRepository.DeleteUserAsync(internalUser);
                     throw new Exception("Role 'Interno' does not exist. User creation has been rolled back.");
-                }
+                }     
 
                 // Generar el token de confirmación de email
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(internalUser);
-                var confirmLink = $"{_configuration["AppUrl"]}/confirm-email?userId={internalUser.Id}&token={Uri.EscapeDataString(token)}";
+                var confirmLink = $"{registerInternalUserDto.ClientUri}/confirm-email?userId={internalUser.Id}&token={Uri.EscapeDataString(token)}";
 
                 // Enviar correo de confirmación
                 var subject = "Email Confirmation";
@@ -79,14 +79,16 @@ namespace trackit.server.Services
 
                 return true;
             }
+            catch (PasswordMismatchException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 // Loguear el error completo (incluyendo el InnerException si existe)
                 throw new Exception("An error occurred while registering the internal user. Details: " + ex.Message, ex);
             }
         }
-
-
 
         public async Task<bool> RegisterExternalUserAsync(RegisterExternalUserDto registerExternalUserDto)
         {
@@ -115,10 +117,11 @@ namespace trackit.server.Services
                     await _userRepository.DeleteUserAsync(externalUser);
                     throw new Exception("Role 'Externo' does not exist. User creation has been rolled back.");
                 }
+ 
 
                 // Generar el token de confirmación de email
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(externalUser);
-                var confirmLink = $"{_configuration["AppUrl"]}/confirm-email?userId={externalUser.Id}&token={Uri.EscapeDataString(token)}";
+                var confirmLink = $"{registerExternalUserDto.ClientUri}/confirm-email?userId={externalUser.Id}&token={Uri.EscapeDataString(token)}";
 
                 // Enviar correo de confirmación
                 var subject = "Email Confirmation";
@@ -127,15 +130,19 @@ namespace trackit.server.Services
 
                 return true;
             }
+            catch (PasswordMismatchException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
-                throw new Exception("An error occurred while registering the external user.", ex);
+                throw new Exception("An error occurred while registering the external user. Details: " + ex.Message, ex);
             }
         }
 
 
         // Método para enviar un enlace de recuperación de contraseña (sin cambios)
-        public async Task<bool> SendPasswordResetLinkAsync(string email)
+        public async Task<bool> SendPasswordResetLinkAsync(string email, string clientUri)
         {
             try
             {
@@ -147,7 +154,16 @@ namespace trackit.server.Services
                 if (string.IsNullOrEmpty(token))
                     throw new PasswordResetException("Failed to generate reset token.");
 
-                var resetLink = $"{_configuration["AppUrl"]}/reset-password?token={token}";
+                // Normalizar el clientUri para evitar barras diagonales al final
+                var normalizedClientUri = clientUri.TrimEnd('/');
+
+                // Codificar el token para uso seguro en la URL
+                var encodedToken = Uri.EscapeDataString(token);
+                var userId = user.Id;
+
+                // Generar el enlace de restablecimiento de contraseña
+                var resetLink = $"{normalizedClientUri}/reset-password?userId={userId}&token={encodedToken}";
+
                 var subject = "Password Reset Request";
                 var body = $"<p>To reset your password, click the link below:</p><p><a href='{resetLink}'>Reset Password</a></p>";
 
@@ -155,9 +171,9 @@ namespace trackit.server.Services
                 {
                     await _emailService.SendEmailAsync(email, subject, body);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    throw new EmailSendException("An error occurred while sending the email for password reset.");
+                    throw new EmailSendException("An error occurred while sending the email for password reset.", ex);
                 }
 
                 return true;
@@ -168,20 +184,41 @@ namespace trackit.server.Services
             }
         }
 
-
-        // Método para restablecer la contraseña (sin cambios)
-       public async Task<bool> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
+        public async Task<bool> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
         {
-            var user = await _userRepository.GetUserByEmailAsync(resetPasswordDto.Email);
+            // Validar si las contraseñas coinciden
+            if (resetPasswordDto.NewPassword != resetPasswordDto.ConfirmPassword)
+            {
+                throw new InvalidOperationException("The new password and confirmation password do not match.");
+            }
+
+            // Buscar al usuario por su UserId a través del repositorio
+            var user = await _userRepository.GetUserByIdAsync(resetPasswordDto.UserId);
             if (user == null)
-                throw new UserNotFoundException();
+            {
+                throw new UserNotFoundException("User not found.");
+            }
 
-            var resetResult = await _userRepository.ResetPasswordAsync(user, resetPasswordDto.Token, resetPasswordDto.NewPassword);
-            if (!resetResult)
-                throw new InvalidOperationException("Password reset failed");
+            // Decodificar el token
+            var decodedToken = Uri.UnescapeDataString(resetPasswordDto.Token);
 
-            return true;
+            // Intentar restablecer la contraseña
+            var result = await _userRepository.ResetPasswordAsync(user, decodedToken, resetPasswordDto.NewPassword);
+
+            // Verificar si la operación fue exitosa
+            if (result.Succeeded)
+            {
+                return true;
+            }
+            else
+            {
+                // Aquí puedes extraer los errores específicos de Identity y devolverlos como detalles
+                var errorMessages = result.Errors.Select(e => e.Description).ToList();
+                throw new InvalidOperationException($"Failed to reset password. Errors: {string.Join(", ", errorMessages)}");
+            }
         }
+
+
 
         public async Task<UserProfileDto> GetUserProfileAsync(string userId)
         {
