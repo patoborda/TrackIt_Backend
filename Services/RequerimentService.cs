@@ -45,7 +45,8 @@ namespace trackit.server.Services
                     CategoryId = requirementDto.CategoryId,
                     PriorityId = requirementDto.PriorityId,
                     Status = status,
-                    Date = DateTime.UtcNow
+                    Date = DateTime.UtcNow,
+                    CreatedByUserId = userId // Asigna el usuario creador
                 };
 
                 // Guardar el requerimiento

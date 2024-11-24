@@ -64,5 +64,7 @@ namespace trackit.server.Middlewares
             var errorResult = new { error = new { code = "INTERNAL_SERVER_ERROR", message = "An unexpected error occurred." } };
             return context.Response.WriteAsJsonAsync(errorResult);
         }
+
+
     }
 }

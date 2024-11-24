@@ -13,6 +13,7 @@ using trackit.server.Services.Interfaces;
 using trackit.server.Factories.UserFactories;
 using CloudinaryDotNet;
 using Microsoft.Extensions.Configuration;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,8 +33,8 @@ builder.Services.AddIdentity<User, IdentityRole>()
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-    .AddJsonFile("appsettings.sensitive.json", optional: true, reloadOnChange: true)  // Asegúrate de que se carga el archivo sensitive
-    .AddEnvironmentVariables();  // Si también quieres cargar variables de entorno
+    .AddJsonFile("appsettings.sensitive.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
 
 // Ahora obtén la clave JWT
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -43,21 +44,23 @@ if (string.IsNullOrEmpty(jwtKey))
 }
 
 // Configurar JWT
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.RequireHttpsMetadata = false;  // Puedes ponerlo en true en producción
-        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            ValidateLifetime = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ValidateLifetime = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
-
 
 // Configuración de Cloudinary
 var cloudinaryConfig = builder.Configuration.GetSection("Cloudinary");
@@ -69,6 +72,35 @@ var cloudinaryAccount = new Account(
 
 // Registramos Cloudinary como Singleton
 builder.Services.AddSingleton(new Cloudinary(cloudinaryAccount));
+
+// Configuración de Swagger con autenticación JWT
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Ingrese 'Bearer {token}' en el campo de autorización."
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 
 // Inyección de dependencias
@@ -85,7 +117,6 @@ builder.Services.AddScoped<IExternalUserFactory, ExternalUserFactory>();
 // Configurar controladores y Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 // Registrar repositorios y servicios para Requirements
 builder.Services.AddScoped<IRequirementRepository, RequirementRepository>();
@@ -102,12 +133,10 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPriorityService, PriorityService>();
 builder.Services.AddScoped<IPriorityRepository, PriorityRepository>();
 
-
-
 var app = builder.Build();
 
 // Configurar middleware para manejo de excepciones
-app.UseMiddleware<ExceptionHandlingMiddleware>();  // Middleware de manejo de excepciones debe estar primero
+app.UseMiddleware<ExceptionHandlingMiddleware>(); // Middleware de manejo de excepciones debe estar primero
 
 // Ejecutar la creación del Admin si no existe al iniciar la aplicación
 using (var scope = app.Services.CreateScope())
@@ -122,6 +151,18 @@ using (var scope = app.Services.CreateScope())
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     await RoleSeeder.SeedRoles(roleManager); // Sembrar roles si es necesario
 }
+app.Use(async (context, next) =>
+{
+    if (context.Request.Headers.ContainsKey("Authorization"))
+    {
+        Console.WriteLine("Authorization Header Found: " + context.Request.Headers["Authorization"]);
+    }
+    else
+    {
+        Console.WriteLine("No Authorization Header Found");
+    }
+    await next.Invoke();
+});
 
 // Configurar la tubería de solicitudes HTTP
 if (app.Environment.IsDevelopment())
@@ -131,8 +172,8 @@ if (app.Environment.IsDevelopment())
 }
 
 // Middleware de autenticación y autorización
-app.UseAuthentication();  // Primero autenticamos
-app.UseAuthorization();   // Luego autorizamos
+app.UseAuthentication(); // Primero autenticamos
+app.UseAuthorization();  // Luego autorizamos
 
 // Redirigir a HTTPS si es necesario
 app.UseHttpsRedirection();

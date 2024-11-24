@@ -19,6 +19,9 @@ public class Requirement
     public DateTime Date { get; set; } = DateTime.UtcNow;
     public string Status { get; set; } = "Abierto";
 
+    public string CreatedByUserId { get; set; } // Usuario creador
+    public User CreatedByUser { get; set; } // Relación con el usuario
+
     public ICollection<RequirementRelation> RelatedRequirements { get; set; } = new List<RequirementRelation>();
     public ICollection<UserRequirement> UserRequirements { get; set; } = new List<UserRequirement>();
 }
