@@ -22,5 +22,11 @@ namespace trackit.server.Repositories.Interfaces
 
         Task<bool> ValidateRequirementRelationExistsAsync(int requirementId, int relatedRequirementId);
 
+        Task<IEnumerable<Requirement>> GetAllAsync();
+        Task DeleteAsync(Requirement requirement);
+        Task DeleteUserAssignmentsAsync(int requirementId);
+        Task DeleteRequirementRelationsAsync(int requirementId);
+
+
     }
 }

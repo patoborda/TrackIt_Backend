@@ -83,6 +83,25 @@ namespace trackit.server.Repositories
             _context.Requirements.Update(requirement);
             await _context.SaveChangesAsync();
         }
+        public async Task DeleteAsync(Requirement requirement)
+        {
+            _context.Requirements.Remove(requirement);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteUserAssignmentsAsync(int requirementId)
+        {
+            var userAssignments = _context.UserRequirements.Where(ur => ur.RequirementId == requirementId);
+            _context.UserRequirements.RemoveRange(userAssignments);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteRequirementRelationsAsync(int requirementId)
+        {
+            var relations = _context.RequirementRelations.Where(rr => rr.RequirementId == requirementId || rr.RelatedRequirementId == requirementId);
+            _context.RequirementRelations.RemoveRange(relations);
+            await _context.SaveChangesAsync();
+        }
 
         public async Task AddUserToRequirementAsync(int requirementId, string userId)
         {
@@ -101,6 +120,14 @@ namespace trackit.server.Repositories
                 _context.UserRequirements.Add(userRequirement);
                 await _context.SaveChangesAsync();
             }
+        }
+        public async Task<IEnumerable<Requirement>> GetAllAsync()
+        {
+            return await _context.Requirements
+                .Include(r => r.RequirementType)
+                .Include(r => r.Category)
+                .Include(r => r.Priority)
+                .ToListAsync();
         }
 
 

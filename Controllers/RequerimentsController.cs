@@ -11,12 +11,12 @@ namespace trackit.server.Controllers
     [Route("api/[controller]")]
     public class RequirementsController : ControllerBase
     {
-        private readonly IRequirementService _service;
-        private readonly IRequirementActionService _actionService; // Servicio para manejar los logs de acciones
+        private readonly IRequirementService _requirementService;
+        private readonly IRequirementActionService _actionService;
 
-        public RequirementsController(IRequirementService service, IRequirementActionService actionService)
+        public RequirementsController(IRequirementService requirementService, IRequirementActionService actionService)
         {
-            _service = service;
+            _requirementService = requirementService;
             _actionService = actionService;
         }
 
@@ -26,13 +26,15 @@ namespace trackit.server.Controllers
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Obtener el ID del usuario autenticado
 
-            var isValid = await _service.ValidateTypeAndCategoryAsync(requirementDto.RequirementTypeId, requirementDto.CategoryId);
+            // Validar tipo y categoría
+            var isValid = await _requirementService.ValidateTypeAndCategoryAsync(requirementDto.RequirementTypeId, requirementDto.CategoryId);
             if (!isValid)
             {
-                return BadRequest("The category does not belong to the specified type.");
+                return BadRequest(new { Message = "The category does not belong to the specified type." });
             }
 
-            var response = await _service.CreateRequirementAsync(requirementDto, userId);
+            // Crear el requerimiento
+            var response = await _requirementService.CreateRequirementAsync(requirementDto, userId);
 
             return Ok(new
             {
@@ -41,13 +43,14 @@ namespace trackit.server.Controllers
             });
         }
 
-
+        // Actualizar un requerimiento
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateRequirement(int id, [FromBody] RequirementUpdateDto updateDto)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Obtener el ID del usuario autenticado
 
-            var response = await _service.UpdateRequirementAsync(id, updateDto, userId);
+            // Actualizar el requerimiento
+            var response = await _requirementService.UpdateRequirementAsync(id, updateDto, userId);
 
             return Ok(new
             {
@@ -56,7 +59,42 @@ namespace trackit.server.Controllers
             });
         }
 
+        // Obtener un requerimiento por ID
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetRequirementById(int id)
+        {
+            var requirement = await _requirementService.GetRequirementByIdAsync(id);
 
+            return Ok(new
+            {
+                Message = "Requirement retrieved successfully",
+                Data = requirement
+            });
+        }
+
+        // Obtener todos los requerimientos
+        [HttpGet]
+        public async Task<IActionResult> GetAllRequirements()
+        {
+            var requirements = await _requirementService.GetAllRequirementsAsync();
+
+            return Ok(new
+            {
+                Message = "Requirements retrieved successfully",
+                Data = requirements
+            });
+        }
+
+        // Eliminar un requerimiento
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteRequirement(int id)
+        {
+            await _requirementService.DeleteRequirementAsync(id);
+
+            return Ok(new { Message = "Requirement deleted successfully" });
+        }
+
+        // Obtener los logs de acciones de un requerimiento
         [HttpGet("{requirementId}/logs")]
         public async Task<IActionResult> GetRequirementLogs(int requirementId)
         {

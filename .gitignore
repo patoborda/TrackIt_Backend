@@ -27,7 +27,7 @@ Migrations/
 .env
 appsettings*.json
 !appsettings.json
-
+!appsettings.Sensitive.json
 # Temporary files
 *.tmp
 *.bak

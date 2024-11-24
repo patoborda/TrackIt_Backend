@@ -180,5 +180,67 @@ namespace trackit.server.Services
         {
             return await _repository.ValidateTypeAndCategoryAsync(typeId, categoryId);
         }
+        public async Task<RequirementResponseDto> GetRequirementByIdAsync(int requirementId)
+        {
+            var requirement = await _repository.GetByIdAsync(requirementId);
+            if (requirement == null)
+            {
+                throw new ArgumentException("Requirement not found.");
+            }
+
+            return new RequirementResponseDto
+            {
+                Id = requirement.Id,
+                Subject = requirement.Subject,
+                Code = requirement.Code,
+                Description = requirement.Description,
+                RequirementType = await _repository.GetRequirementTypeNameAsync(requirement.RequirementTypeId),
+                Category = await _repository.GetCategoryNameAsync(requirement.CategoryId),
+                Priority = requirement.PriorityId.HasValue
+                    ? await _repository.GetPriorityNameAsync(requirement.PriorityId.Value)
+                    : null,
+                Date = requirement.Date,
+                Status = requirement.Status
+            };
+        }
+        public async Task DeleteRequirementAsync(int requirementId)
+        {
+            var requirement = await _repository.GetByIdAsync(requirementId);
+            if (requirement == null)
+            {
+                throw new ArgumentException("Requirement not found.");
+            }
+
+            // Eliminar relaciones de usuarios asignados
+            await _repository.DeleteUserAssignmentsAsync(requirementId);
+
+            // Eliminar relaciones con otros requerimientos
+            await _repository.DeleteRequirementRelationsAsync(requirementId);
+
+            // Eliminar el requerimiento
+            await _repository.DeleteAsync(requirement);
+        }
+
+        public async Task<IEnumerable<RequirementResponseDto>> GetAllRequirementsAsync()
+        {
+            var requirements = await _repository.GetAllAsync();
+
+            return requirements.Select(async requirement => new RequirementResponseDto
+            {
+                Id = requirement.Id,
+                Subject = requirement.Subject,
+                Code = requirement.Code,
+                Description = requirement.Description,
+                RequirementType = await _repository.GetRequirementTypeNameAsync(requirement.RequirementTypeId),
+                Category = await _repository.GetCategoryNameAsync(requirement.CategoryId),
+                Priority = requirement.PriorityId.HasValue
+                    ? await _repository.GetPriorityNameAsync(requirement.PriorityId.Value)
+                    : null,
+                Date = requirement.Date,
+                Status = requirement.Status
+            }).Select(t => t.Result);
+        }
+
     }
+
 }
