@@ -18,6 +18,8 @@ namespace trackit.server.Data
         public DbSet<ExternalUser> ExternalUsers { get; set; }
         public DbSet<AdminUser> AdminUsers { get; set; }
         public DbSet<UserRequirement> UserRequirements { get; set; }
+        public DbSet<Comment> Comments { get; set; }
+        public DbSet<AttachedFile> AttachedFiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -95,6 +97,27 @@ namespace trackit.server.Data
                 .WithMany()
                 .HasForeignKey(r => r.PriorityId)
                 .OnDelete(DeleteBehavior.SetNull); // Cambiar a SetNull si PriorityId es opcional
+
+            // Configuración de la relación Comment -> Requirement
+            modelBuilder.Entity<Comment>()
+                .HasOne(c => c.Requirement)
+                .WithMany(r => r.Comments)
+                .HasForeignKey(c => c.RequirementId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configuración de la relación Comment -> User
+            modelBuilder.Entity<Comment>()
+                .HasOne(c => c.User)
+                .WithMany(u => u.Comments)
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configuración de la relación Comment -> AttachedFile
+            modelBuilder.Entity<Comment>()
+                .HasMany(c => c.Files)
+                .WithOne()
+                .OnDelete(DeleteBehavior.Cascade);
+
 
             // Seed Data para RequirementType
             modelBuilder.Entity<RequirementType>().HasData(

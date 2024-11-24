@@ -16,6 +16,8 @@ namespace trackit.server.Models
 
         // Relación muchos a muchos con Requirements
         public ICollection<UserRequirement> UserRequirements { get; set; } = new List<UserRequirement>();
+        // Propiedad de navegación: Un usuario puede tener muchos comentarios
+        public List<Comment> Comments { get; set; } = new();
     }
 
     // Clase para datos específicos del usuario interno

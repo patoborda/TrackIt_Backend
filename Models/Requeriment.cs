@@ -1,4 +1,4 @@
-﻿using trackit.server.Models;
+using trackit.server.Models;
 
 public class Requirement
 {
@@ -22,6 +22,8 @@ public class Requirement
     public string CreatedByUserId { get; set; } // Usuario creador
     public User CreatedByUser { get; set; } // Relación con el usuario
 
+    // Relación con Comment
+    public List<Comment> Comments { get; set; } = new();
     public ICollection<RequirementRelation> RelatedRequirements { get; set; } = new List<RequirementRelation>();
     public ICollection<UserRequirement> UserRequirements { get; set; } = new List<UserRequirement>();
 }
