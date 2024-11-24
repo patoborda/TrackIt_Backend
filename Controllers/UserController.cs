@@ -229,9 +229,6 @@ namespace trackit.server.Controllers
             }
         }
 
-
-
-        /*******************************************************************************************************************/
         [HttpGet("GetAllUsers")]
         public async Task<IActionResult> GetAllUsers()
         {
@@ -294,6 +291,41 @@ namespace trackit.server.Controllers
                 return StatusCode(500, new { message = ex.Message });
             }
         }
+
+
+        /************************************************************************************************/
+
+        // Endpoint para subir la imagen del usuario
+        [HttpPost("upload-image/{userId}")]
+        public async Task<IActionResult> UploadImage(string userId, IFormFile file)
+        {
+            try
+            {
+                var updatedUser = await _userService.UploadImageAsync(file, userId);
+                return Ok(updatedUser); // Devuelve el usuario actualizado con la URL de la imagen
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // Endpoint para asignar imagen por defecto a todos los usuarios sin imagen
+        [HttpPost("assign-default-image")]
+        public async Task<IActionResult> AssignDefaultImageToAllUsers()
+        {
+            try
+            {
+                await _userService.AssignDefaultImageToAllUsersAsync();
+                return Ok("Default image assigned to users without an image.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+
 
 
     }

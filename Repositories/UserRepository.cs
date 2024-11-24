@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using trackit.server.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using trackit.server.Data;
 
 namespace trackit.server.Repositories
 {
@@ -12,11 +13,13 @@ namespace trackit.server.Repositories
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly UserDbContext _userDbContext;
 
-        public UserRepository(UserManager<User> userManager, RoleManager<IdentityRole> roleManager)
+        public UserRepository(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, UserDbContext userDbContext)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _userDbContext = userDbContext;
         }
 
         public async Task<User> GetUserByEmailAsync(string email)
@@ -86,8 +89,6 @@ namespace trackit.server.Repositories
                 .FirstOrDefaultAsync(u => u.Id == userId);
         }
 
-
-        /**************************************************************/
         public async Task<List<User>> GetUsersExcludingAdminsAsync()
         {
             // Obtener usuarios, excluyendo los administradores (usuarios con relación a AdminUser)
@@ -117,7 +118,40 @@ namespace trackit.server.Repositories
         }
 
 
+        /*******************************************************************************************************/
 
+        // Asignar una imagen predeterminada a todos los usuarios que no tienen imagen
+        public async Task AssignDefaultImageToAllUsersAsync()
+        {
+            var usersWithoutImage = await _userDbContext.Users
+                .Where(u => string.IsNullOrEmpty(u.Image)) // Filtrar usuarios sin imagen
+                .ToListAsync();
+
+            foreach (var user in usersWithoutImage)
+            {
+                user.Image = "https://res.cloudinary.com/dpzhs3vyi/image/upload/v1732408233/default-image_zcgh1j.png";
+            }
+
+            await _userDbContext.SaveChangesAsync(); // Guardar los cambios
+        }
+
+        // Actualizar un usuario con la URL de la imagen
+        public async Task<User> UpdateUserImageAsync(string userId, string imageUrl)
+        {
+            var user = await _userDbContext.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.Image = imageUrl;
+                await _userDbContext.SaveChangesAsync();
+            }
+            return user;
+        }
     }
 
 }
+
+
+
+
+
+

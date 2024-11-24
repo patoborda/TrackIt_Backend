@@ -6,6 +6,7 @@ using trackit.server.Exceptions;
 using trackit.server.Services.Interfaces;
 using trackit.server.Factories.UserFactories;
 using static trackit.server.Dtos.RegisterUserDto;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace trackit.server.Services
 {
@@ -18,6 +19,7 @@ namespace trackit.server.Services
         private readonly IEmailService _emailService;
         private readonly IInternalUserFactory _internalUserFactory;
         private readonly IExternalUserFactory _externalUserFactory;
+        private readonly IImageService _imageService;
 
         // Constructor actualizado con las fábricas específicas
         public UserService(IUserRepository userRepository,
@@ -26,7 +28,8 @@ namespace trackit.server.Services
             UserManager<User> userManager,
             IEmailService emailService,
             IInternalUserFactory internalUserFactory,
-            IExternalUserFactory externalUserFactory)
+            IExternalUserFactory externalUserFactory,
+            IImageService imageService)
         {
             _userRepository = userRepository;
             _signInManager = signInManager;
@@ -35,6 +38,7 @@ namespace trackit.server.Services
             _emailService = emailService;
             _internalUserFactory = internalUserFactory;
             _externalUserFactory = externalUserFactory;
+            _imageService = imageService;
         }
 
         public async Task<bool> RegisterInternalUserAsync(RegisterInternalUserDto registerInternalUserDto)
@@ -199,6 +203,7 @@ namespace trackit.server.Services
                     Email = user.Email,
                     UserName = user.UserName,
                     IsEnabled = user.IsEnabled,
+                    Image = user.Image,
                     AdminSpecificAttribute = "SomeAdminData"
                 };
             }
@@ -211,6 +216,7 @@ namespace trackit.server.Services
                     Email = user.Email,
                     UserName = user.UserName,
                     IsEnabled = user.IsEnabled,
+                    Image = user.Image,
                     Cargo = user.InternalUser.Cargo,
                     Departamento = user.InternalUser.Departamento
                 };
@@ -224,6 +230,7 @@ namespace trackit.server.Services
                     Email = user.Email,
                     UserName = user.UserName,
                     IsEnabled = user.IsEnabled,
+                    Image = user.Image,
                     Cuil = user.ExternalUser.Cuil,
                     Empresa = user.ExternalUser.Empresa,
                     Descripcion = user.ExternalUser.Descripcion
@@ -237,12 +244,10 @@ namespace trackit.server.Services
                 LastName = user.LastName,
                 Email = user.Email,
                 UserName = user.UserName,
-                IsEnabled = user.IsEnabled
+                IsEnabled = user.IsEnabled,
+                Image = user.Image
             };
         }
-
-
-        /******************************************************************************************************/
 
         public async Task<List<UserProfileDto>> GetAllUsersAsync()
         {
@@ -262,48 +267,66 @@ namespace trackit.server.Services
         }
 
         // Obtener todos los usuarios externos habilitados
-    public async Task<List<ExternalUserProfileDto>> GetExternalUsersAsync()
-    {
-        // Obtener usuarios externos habilitados desde el repositorio
-        var externalUsers = await _userRepository.GetExternalUsersAsync();
-
-        // Mapear a DTO de usuarios externos
-        var userDtos = externalUsers.Select(u => new ExternalUserProfileDto
+        public async Task<List<ExternalUserProfileDto>> GetExternalUsersAsync()
         {
-            FirstName = u.FirstName,
-            LastName = u.LastName,
-            Email = u.Email,
-            UserName = u.UserName,
-            IsEnabled = u.IsEnabled,
-            Cuil = u.ExternalUser?.Cuil,
-            Empresa = u.ExternalUser?.Empresa,
-            Descripcion = u.ExternalUser?.Descripcion
-        }).ToList();
+            // Obtener usuarios externos habilitados desde el repositorio
+            var externalUsers = await _userRepository.GetExternalUsersAsync();
 
-        return userDtos;
-    }
+            // Mapear a DTO de usuarios externos
+            var userDtos = externalUsers.Select(u => new ExternalUserProfileDto
+            {
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Email = u.Email,
+                UserName = u.UserName,
+                IsEnabled = u.IsEnabled,
+                Image = u.Image,
+                Cuil = u.ExternalUser?.Cuil,
+                Empresa = u.ExternalUser?.Empresa,
+                Descripcion = u.ExternalUser?.Descripcion
+            }).ToList();
 
-    // Obtener todos los usuarios internos habilitados
-    public async Task<List<InternalUserProfileDto>> GetInternalUsersAsync()
-    {
-        // Obtener usuarios internos habilitados desde el repositorio
-        var internalUsers = await _userRepository.GetInternalUsersAsync();
+            return userDtos;
+        }
 
-        // Mapear a DTO de usuarios internos
-        var userDtos = internalUsers.Select(u => new InternalUserProfileDto
+        // Obtener todos los usuarios internos habilitados
+        public async Task<List<InternalUserProfileDto>> GetInternalUsersAsync()
         {
-            FirstName = u.FirstName,
-            LastName = u.LastName,
-            Email = u.Email,
-            UserName = u.UserName,
-            IsEnabled = u.IsEnabled,
-            Cargo = u.InternalUser?.Cargo,
-            Departamento = u.InternalUser?.Departamento
-        }).ToList();
+            // Obtener usuarios internos habilitados desde el repositorio
+            var internalUsers = await _userRepository.GetInternalUsersAsync();
 
-        return userDtos;
-    }
+            // Mapear a DTO de usuarios internos
+            var userDtos = internalUsers.Select(u => new InternalUserProfileDto
+            {
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Email = u.Email,
+                UserName = u.UserName,
+                IsEnabled = u.IsEnabled,
+                Image = u.Image,
+                Cargo = u.InternalUser?.Cargo,
+                Departamento = u.InternalUser?.Departamento
+            }).ToList();
 
+            return userDtos;
+        }
+
+
+        /*******************************************************************************************************************/
+
+        // Subir la imagen para un usuario
+        public async Task<User> UploadImageAsync(IFormFile file, string userId)
+        {
+            // Subir la imagen usando el servicio de imágenes
+            var imageUrl = await _imageService.UploadImageAsync(file);
+            return await _userRepository.UpdateUserImageAsync(userId, imageUrl);
+        }
+
+        // Asignar una imagen predeterminada a los usuarios que no tienen imagen
+        public async Task AssignDefaultImageToAllUsersAsync()
+        {
+            await _userRepository.AssignDefaultImageToAllUsersAsync();
+        }
 
     }
 }

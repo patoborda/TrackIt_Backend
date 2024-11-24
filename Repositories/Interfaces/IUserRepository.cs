@@ -17,11 +17,13 @@ namespace trackit.server.Repositories.Interfaces
         Task<string> GeneratePasswordResetTokenAsync(User user);  // Genera token de restablecimiento
         Task<bool> ResetPasswordAsync(User user, string token, string newPassword);  // Restablece contraseña
         Task<User> GetUserWithRelationsByIdAsync(string userId);
-
-        /****************************/
         Task<List<User>> GetUsersExcludingAdminsAsync();
         Task<List<User>> GetExternalUsersAsync();
         Task<List<User>> GetInternalUsersAsync();
+
+        /*********************************************************/
+        Task AssignDefaultImageToAllUsersAsync();
+        Task<User> UpdateUserImageAsync(string userId, string imageUrl);
 
     }
 

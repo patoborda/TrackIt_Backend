@@ -42,7 +42,8 @@ public class AppInitializationService
                 Email = adminEmail,
                 FirstName = "Admin",
                 LastName = "User",
-                IsEnabled = true // El admin siempre está habilitado
+                IsEnabled = true, // El admin siempre está habilitado
+                Image = "https://res.cloudinary.com/dpzhs3vyi/image/upload/v1732408233/default-image_zcgh1j.png"
             };
 
             var result = await _userManager.CreateAsync(adminUser, adminPassword);

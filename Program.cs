@@ -10,8 +10,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using trackit.server.Middlewares;
 using trackit.server.Services.Interfaces;
-using trackit.server.Factories;
 using trackit.server.Factories.UserFactories;
+using CloudinaryDotNet;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,11 +58,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+
+// Configuración de Cloudinary
+var cloudinaryConfig = builder.Configuration.GetSection("Cloudinary");
+var cloudinaryAccount = new Account(
+    cloudinaryConfig["CloudName"],
+    cloudinaryConfig["ApiKey"],
+    cloudinaryConfig["ApiSecret"]
+);
+
+// Registramos Cloudinary como Singleton
+builder.Services.AddSingleton(new Cloudinary(cloudinaryAccount));
+
+
 // Inyección de dependencias
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();  // Servicio de correo
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IImageService, ImageService>();
 
 // Registrar las factorías específicas
 builder.Services.AddScoped<IInternalUserFactory, InternalUserFactory>();

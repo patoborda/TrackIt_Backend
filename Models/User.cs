@@ -7,6 +7,7 @@ namespace trackit.server.Models
         public required string FirstName { get; set; }
         public required string LastName { get; set; }
         public bool IsEnabled { get; set; } = false; // Estado inicial deshabilitado
+        public string? Image { get; set; }
 
         // Relaciones uno a uno
         public InternalUser? InternalUser { get; set; }
