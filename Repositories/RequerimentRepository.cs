@@ -54,6 +54,14 @@ namespace trackit.server.Repositories
             return await _context.Requirements.AnyAsync(r => r.Id == requirementId);
         }
 
+
+        public async Task<bool> ValidateRequirementRelationExistsAsync(int requirementId, int relatedRequirementId)
+        {
+            return await _context.RequirementRelations
+                .AnyAsync(rr => rr.RequirementId == requirementId && rr.RelatedRequirementId == relatedRequirementId);
+        }
+
+
         public async Task AddRequirementRelationAsync(int requirementId, int relatedRequirementId)
         {
             var relation = new RequirementRelation
@@ -61,21 +69,44 @@ namespace trackit.server.Repositories
                 RequirementId = requirementId,
                 RelatedRequirementId = relatedRequirementId
             };
-
             _context.RequirementRelations.Add(relation);
             await _context.SaveChangesAsync();
         }
 
-            public async Task<Requirement> GetByIdAsync(int id)
-            {
-                return await _context.Requirements.FindAsync(id);
-            }
+        public async Task<Requirement> GetByIdAsync(int id)
+        {
+            return await _context.Requirements.FindAsync(id);
+        }
 
-            public async Task UpdateAsync(Requirement requirement)
+        public async Task UpdateAsync(Requirement requirement)
+        {
+            _context.Requirements.Update(requirement);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AddUserToRequirementAsync(int requirementId, string userId)
+        {
+            // Validación para evitar duplicados
+            var exists = await _context.UserRequirements
+                .AnyAsync(ur => ur.UserId == userId && ur.RequirementId == requirementId);
+
+            if (!exists)
             {
-                _context.Requirements.Update(requirement);
+                var userRequirement = new UserRequirement
+                {
+                    UserId = userId,
+                    RequirementId = requirementId
+                };
+
+                _context.UserRequirements.Add(userRequirement);
                 await _context.SaveChangesAsync();
             }
         }
 
+
+        public async Task<bool> ValidateUserExistsAsync(string userId)
+        {
+            return await _context.Users.AnyAsync(u => u.Id == userId);
+        }
     }
+}

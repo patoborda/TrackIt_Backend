@@ -24,13 +24,16 @@ namespace trackit.server.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateRequirement([FromBody] RequirementCreateDto requirementDto)
         {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Obtener el ID del usuario autenticado
+
             var isValid = await _service.ValidateTypeAndCategoryAsync(requirementDto.RequirementTypeId, requirementDto.CategoryId);
             if (!isValid)
             {
                 return BadRequest("The category does not belong to the specified type.");
             }
 
-            var response = await _service.CreateRequirementAsync(requirementDto);
+            var response = await _service.CreateRequirementAsync(requirementDto, userId);
+
             return Ok(new
             {
                 Message = "Requirement created successfully",
@@ -38,8 +41,7 @@ namespace trackit.server.Controllers
             });
         }
 
-        // Actualizar un requerimiento (solo para usuarios internos)
-        //[Authorize(Roles = "Interno")]
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateRequirement(int id, [FromBody] RequirementUpdateDto updateDto)
         {
@@ -54,8 +56,7 @@ namespace trackit.server.Controllers
             });
         }
 
-        // Obtener el historial de acciones de un requerimiento (solo para usuarios internos)
-        //[Authorize(Roles = "Interno")]
+
         [HttpGet("{requirementId}/logs")]
         public async Task<IActionResult> GetRequirementLogs(int requirementId)
         {

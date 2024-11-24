@@ -4,108 +4,121 @@ using trackit.server.Models;
 
 namespace trackit.server.Data
 {
+    public class UserDbContext : IdentityDbContext<User>
+    {
+        public UserDbContext(DbContextOptions<UserDbContext> options) : base(options) { }
 
-        public class UserDbContext : IdentityDbContext<User> // User es tu clase que representa al usuario
-        {
-            public UserDbContext(DbContextOptions<UserDbContext> options) : base(options)
-            {
-            }
-
-            public DbSet<Requirement> Requirements { get; set; }
-            public DbSet<RequirementType> RequirementTypes { get; set; }
-            public DbSet<Category> Categories { get; set; }
-            public DbSet<RequirementRelation> RequirementRelations { get; set; }
-            public DbSet<Priority> Priorities { get; set; } // Agrega esto
-            public DbSet<RequirementActionLog> RequirementActionLogs { get; set; }
-            public DbSet<InternalUser> InternalUsers { get; set; } = null!;
-            public DbSet<ExternalUser> ExternalUsers { get; set; } = null!;
-            public DbSet<AdminUser> AdminUsers { get; set; } = null!;
+        public DbSet<Requirement> Requirements { get; set; }
+        public DbSet<RequirementType> RequirementTypes { get; set; }
+        public DbSet<Category> Categories { get; set; }
+        public DbSet<RequirementRelation> RequirementRelations { get; set; }
+        public DbSet<Priority> Priorities { get; set; }
+        public DbSet<RequirementActionLog> RequirementActionLogs { get; set; }
+        public DbSet<InternalUser> InternalUsers { get; set; }
+        public DbSet<ExternalUser> ExternalUsers { get; set; }
+        public DbSet<AdminUser> AdminUsers { get; set; }
+        public DbSet<UserRequirement> UserRequirements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-            {
-                base.OnModelCreating(modelBuilder);
+        {
+            base.OnModelCreating(modelBuilder);
 
-                // Relationship between RequirementType and Category
-                modelBuilder.Entity<Category>()
-                    .HasOne(c => c.RequirementType)
-                    .WithMany(rt => rt.Categories)
-                    .HasForeignKey(c => c.RequirementTypeId)
-                    .OnDelete(DeleteBehavior.Restrict); // Cambiado a Restrict
+            // Relación uno-a-uno entre User e InternalUser
+            modelBuilder.Entity<InternalUser>()
+                .HasOne(iu => iu.User)
+                .WithOne(u => u.InternalUser)
+                .HasForeignKey<InternalUser>(iu => iu.Id)
+                .OnDelete(DeleteBehavior.Restrict);
 
-                // Relationship between Requirement and RequirementType
-                modelBuilder.Entity<Requirement>()
-                    .HasOne(r => r.RequirementType)
-                    .WithMany()
-                    .HasForeignKey(r => r.RequirementTypeId)
-                    .OnDelete(DeleteBehavior.Restrict); // Cambiado a Restrict
+            // Relación uno-a-uno entre User y ExternalUser
+            modelBuilder.Entity<ExternalUser>()
+                .HasOne(eu => eu.User)
+                .WithOne(u => u.ExternalUser)
+                .HasForeignKey<ExternalUser>(eu => eu.Id)
+                .OnDelete(DeleteBehavior.Restrict);
 
-                // Relationship between Requirement and Category
-                modelBuilder.Entity<Requirement>()
-                    .HasOne(r => r.Category)
-                    .WithMany()
-                    .HasForeignKey(r => r.CategoryId)
-                    .OnDelete(DeleteBehavior.Restrict); // Cambiado a Restrict
+            // Relación uno-a-uno entre User y AdminUser
+            modelBuilder.Entity<AdminUser>()
+                .HasOne(au => au.User)
+                .WithOne(u => u.AdminUser)
+                .HasForeignKey<AdminUser>(au => au.Id)
+                .OnDelete(DeleteBehavior.Restrict);
 
-                // Self-referencing relationship for RequirementRelation
-                modelBuilder.Entity<RequirementRelation>()
-                    .HasKey(rr => new { rr.RequirementId, rr.RelatedRequirementId });
+            // Configuración de la relación muchos-a-muchos entre User y Requirement (UserRequirement)
+            modelBuilder.Entity<UserRequirement>()
+                .HasKey(ur => new { ur.UserId, ur.RequirementId });
 
-                modelBuilder.Entity<RequirementRelation>()
-                    .HasOne(rr => rr.Requirement)
-                    .WithMany(r => r.RelatedRequirements)
-                    .HasForeignKey(rr => rr.RequirementId)
-                    .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<UserRequirement>()
+                .HasOne(ur => ur.User)
+                .WithMany(u => u.UserRequirements)
+                .HasForeignKey(ur => ur.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-                modelBuilder.Entity<RequirementRelation>()
-                    .HasOne(rr => rr.RelatedRequirement)
-                    .WithMany()
-                    .HasForeignKey(rr => rr.RelatedRequirementId)
-                    .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<UserRequirement>()
+                .HasOne(ur => ur.Requirement)
+                .WithMany(r => r.UserRequirements)
+                .HasForeignKey(ur => ur.RequirementId)
+                .OnDelete(DeleteBehavior.Restrict);
 
+            // Configuración de la relación auto-referenciada para RequirementRelation
+            modelBuilder.Entity<RequirementRelation>()
+                .HasKey(rr => new { rr.RequirementId, rr.RelatedRequirementId });
 
-                // Configuración de la relación uno-a-uno entre User y AdminUser
-                modelBuilder.Entity<AdminUser>()
-                    .HasOne(admin => admin.User) // AdminUser tiene un User
-                    .WithOne(user => user.AdminUser) // User tiene un AdminUser
-                    .HasForeignKey<AdminUser>(admin => admin.Id); // La clave foránea está en AdminUser.Id
+            modelBuilder.Entity<RequirementRelation>()
+                .HasOne(rr => rr.Requirement)
+                .WithMany(r => r.RelatedRequirements)
+                .HasForeignKey(rr => rr.RequirementId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-                // Configuración de la relación uno-a-uno entre User y InternalUser
-                modelBuilder.Entity<InternalUser>()
-                    .HasOne(internalUser => internalUser.User)
-                    .WithOne(user => user.InternalUser)
-                    .HasForeignKey<InternalUser>(internalUser => internalUser.Id);
+            modelBuilder.Entity<RequirementRelation>()
+                .HasOne(rr => rr.RelatedRequirement)
+                .WithMany()
+                .HasForeignKey(rr => rr.RelatedRequirementId)
+                .OnDelete(DeleteBehavior.Restrict);
+            // Configuración de la relación con RequirementType
+            modelBuilder.Entity<Requirement>()
+                .HasOne(r => r.RequirementType)
+                .WithMany()
+                .HasForeignKey(r => r.RequirementTypeId)
+                .OnDelete(DeleteBehavior.Restrict); // Cambiar a Restrict para evitar cascada
 
-                // Configuración de la relación uno-a-uno entre User y ExternalUser
-                modelBuilder.Entity<ExternalUser>()
-                    .HasOne(externalUser => externalUser.User)
-                    .WithOne(user => user.ExternalUser)
-                    .HasForeignKey<ExternalUser>(externalUser => externalUser.Id);
+            // Configuración de la relación con Category
+            modelBuilder.Entity<Requirement>()
+                .HasOne(r => r.Category)
+                .WithMany()
+                .HasForeignKey(r => r.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict); // Cambiar a Restrict para evitar cascada
 
+            // Configuración de la relación con Priority
+            modelBuilder.Entity<Requirement>()
+                .HasOne(r => r.Priority)
+                .WithMany()
+                .HasForeignKey(r => r.PriorityId)
+                .OnDelete(DeleteBehavior.SetNull); // Cambiar a SetNull si PriorityId es opcional
 
-                
-                // Seed Data
-                modelBuilder.Entity<RequirementType>().HasData(
-                        new RequirementType { Id = 1, Name = "Hardware" },
-                        new RequirementType { Id = 2, Name = "Software" },
-                        new RequirementType { Id = 3, Name = "Maintenance" }
-                    );
+            // Seed Data para RequirementType
+            modelBuilder.Entity<RequirementType>().HasData(
+                new RequirementType { Id = 1, Name = "Hardware" },
+                new RequirementType { Id = 2, Name = "Software" },
+                new RequirementType { Id = 3, Name = "Maintenance" }
+            );
 
-                modelBuilder.Entity<Category>().HasData(
-                    new Category { Id = 1, Name = "Hardware Malfunction", RequirementTypeId = 1 },
-                    new Category { Id = 2, Name = "Network Issue", RequirementTypeId = 1 },
-                    new Category { Id = 3, Name = "Software Bug", RequirementTypeId = 2 },
-                    new Category { Id = 4, Name = "Database Maintenance", RequirementTypeId = 2 },
-                    new Category { Id = 5, Name = "Routine Check", RequirementTypeId = 3 }
-                );
-                // Seed Data para Priority
-                modelBuilder.Entity<Priority>().HasData(
-                    new Priority { Id = 4, TypePriority = "Urgente" },
-                    new Priority { Id = 1, TypePriority = "Alta" },
-                    new Priority { Id = 2, TypePriority = "Media" },
-                    new Priority { Id = 3, TypePriority = "Baja" }
-                );
-            }
+            // Seed Data para Category
+            modelBuilder.Entity<Category>().HasData(
+                new Category { Id = 1, Name = "Hardware Malfunction", RequirementTypeId = 1 },
+                new Category { Id = 2, Name = "Network Issue", RequirementTypeId = 1 },
+                new Category { Id = 3, Name = "Software Bug", RequirementTypeId = 2 },
+                new Category { Id = 4, Name = "Database Maintenance", RequirementTypeId = 2 },
+                new Category { Id = 5, Name = "Routine Check", RequirementTypeId = 3 }
+            );
 
+            // Seed Data para Priority
+            modelBuilder.Entity<Priority>().HasData(
+                new Priority { Id = 1, TypePriority = "Alta" },
+                new Priority { Id = 2, TypePriority = "Media" },
+                new Priority { Id = 3, TypePriority = "Baja" },
+                new Priority { Id = 4, TypePriority = "Urgente" }
+            );
         }
+    }
 }
-

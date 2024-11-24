@@ -1,34 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using trackit.server.Models;
 
-namespace trackit.server.Models
+public class Requirement
 {
-    public class Requirement
-    {
-        public int Id { get; set; }
-        public string Subject { get; set; }
-        public string Code { get; set; }
-        public string Description { get; set; }
+    public int Id { get; set; }
+    public string Subject { get; set; }
+    public string Code { get; set; }
+    public string Description { get; set; }
 
-        // Relación con RequirementType
-        public int RequirementTypeId { get; set; }
-        public RequirementType RequirementType { get; set; }
+    public int RequirementTypeId { get; set; }
+    public RequirementType RequirementType { get; set; }
 
-        // Relación con Category
-        public int CategoryId { get; set; }
-        public Category Category { get; set; }
+    public int CategoryId { get; set; }
+    public Category Category { get; set; }
 
-        // Relación con Priority
-        public int? PriorityId { get; set; } // Ahora es anulable
-        public Priority? Priority { get; set; }
+    public int? PriorityId { get; set; }
+    public Priority? Priority { get; set; }
 
-        // Fecha de creación
-        public DateTime Date { get; set; } = DateTime.UtcNow;
+    public DateTime Date { get; set; } = DateTime.UtcNow;
+    public string Status { get; set; } = "Abierto";
 
-        // Estado
-        public string Status { get; set; } = "Abierto";
-
-        // Relación con otros requerimientos
-        public ICollection<RequirementRelation> RelatedRequirements { get; set; }
-    }
+    public ICollection<RequirementRelation> RelatedRequirements { get; set; } = new List<RequirementRelation>();
+    public ICollection<UserRequirement> UserRequirements { get; set; } = new List<UserRequirement>();
 }

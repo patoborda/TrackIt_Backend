@@ -1,4 +1,5 @@
-﻿using trackit.server.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using trackit.server.Models;
 
 namespace trackit.server.Repositories.Interfaces
 {
@@ -16,6 +17,10 @@ namespace trackit.server.Repositories.Interfaces
         Task AddRequirementRelationAsync(int requirementId, int relatedRequirementId); // Agregar relación
         Task<Requirement> GetByIdAsync(int id);
         Task UpdateAsync(Requirement requirement);
+        Task AddUserToRequirementAsync(int requirementId, string userId);
+        Task<bool> ValidateUserExistsAsync(string userId);
+
+        Task<bool> ValidateRequirementRelationExistsAsync(int requirementId, int relatedRequirementId);
 
     }
 }

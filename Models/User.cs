@@ -9,10 +9,13 @@ namespace trackit.server.Models
         public bool IsEnabled { get; set; } = false; // Estado inicial deshabilitado
         public string? Image { get; set; }
 
-        // Relaciones uno a uno
+        // Relaciones uno-a-uno
         public InternalUser? InternalUser { get; set; }
         public ExternalUser? ExternalUser { get; set; }
         public AdminUser? AdminUser { get; set; }
+
+        // Relación muchos a muchos con Requirements
+        public ICollection<UserRequirement> UserRequirements { get; set; } = new List<UserRequirement>();
     }
 
     // Clase para datos específicos del usuario interno

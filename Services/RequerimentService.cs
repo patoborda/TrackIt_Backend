@@ -8,7 +8,7 @@ namespace trackit.server.Services
     public class RequirementService : IRequirementService
     {
         private readonly IRequirementRepository _repository;
-        private readonly RequirementNotifier _notifier; // Patrón Observer
+        private readonly RequirementNotifier _notifier;
 
         public RequirementService(IRequirementRepository repository, RequirementNotifier notifier)
         {
@@ -16,91 +16,112 @@ namespace trackit.server.Services
             _notifier = notifier;
         }
 
-        public async Task<RequirementResponseDto> CreateRequirementAsync(RequirementCreateDto requirementDto)
+        public async Task<RequirementResponseDto> CreateRequirementAsync(RequirementCreateDto requirementDto, string userId)
         {
-            // Validar que la categoría pertenece al tipo
-            var isValid = await _repository.ValidateTypeAndCategoryAsync(requirementDto.RequirementTypeId, requirementDto.CategoryId);
-            if (!isValid)
+            try
             {
-                throw new ArgumentException("The selected category does not belong to the specified type.");
-            }
-
-            // Crear el código
-            var currentYear = DateTime.Now.Year;
-            string typeCode = "REH";
-            int sequentialNumber = await _repository.GetNextSequentialNumberAsync();
-            var generatedCode = $"{typeCode}-{currentYear}-{sequentialNumber.ToString("D10")}";
-
-            // Crear el requerimiento
-            var newRequirement = new Requirement
-            {
-                Subject = requirementDto.Subject,
-                Description = requirementDto.Description,
-                Code = generatedCode,
-                RequirementTypeId = requirementDto.RequirementTypeId,
-                CategoryId = requirementDto.CategoryId,
-                PriorityId = requirementDto.PriorityId, // Puede ser null
-                Date = DateTime.UtcNow, // Fecha actual
-                Status = "Abierto" // Estado predeterminado
-            };
-
-            // Guardar el requerimiento en la base de datos
-            var savedRequirement = await _repository.AddAsync(newRequirement);
-
-            // Manejar requerimientos relacionados
-            if (requirementDto.RelatedRequirementIds != null && requirementDto.RelatedRequirementIds.Any())
-            {
-                foreach (var relatedId in requirementDto.RelatedRequirementIds)
+                // Validar que la categoría pertenece al tipo
+                var isValid = await _repository.ValidateTypeAndCategoryAsync(requirementDto.RequirementTypeId, requirementDto.CategoryId);
+                if (!isValid)
                 {
-                    // Verificar que el requerimiento relacionado no sea el mismo que el creado
-                    if (relatedId == savedRequirement.Id)
-                    {
-                        throw new ArgumentException($"A requirement cannot be related to itself. RequirementId: {savedRequirement.Id}");
-                    }
+                    throw new ArgumentException("The selected category does not belong to the specified type.");
+                }
 
-                    // Verificar que el requerimiento relacionado exista
-                    var exists = await _repository.ValidateRequirementExistsAsync(relatedId);
-                    if (exists)
+                // Generar código único para el requerimiento
+                var nextSequentialNumber = await _repository.GetNextSequentialNumberAsync();
+                var currentYear = DateTime.UtcNow.Year;
+                var requirementCode = $"REH-{currentYear}-{nextSequentialNumber:00000000}";
+
+                // Determinar el estado inicial
+                var status = requirementDto.AssignedUsers != null && requirementDto.AssignedUsers.Any() ? "Asignado" : "Abierto";
+
+                // Crear el requerimiento
+                var newRequirement = new Requirement
+                {
+                    Subject = requirementDto.Subject,
+                    Code = requirementCode,
+                    Description = requirementDto.Description,
+                    RequirementTypeId = requirementDto.RequirementTypeId,
+                    CategoryId = requirementDto.CategoryId,
+                    PriorityId = requirementDto.PriorityId,
+                    Status = status,
+                    Date = DateTime.UtcNow
+                };
+
+                // Guardar el requerimiento
+                var savedRequirement = await _repository.AddAsync(newRequirement);
+
+                if (requirementDto.AssignedUsers != null && requirementDto.AssignedUsers.Any())
+                {
+                    foreach (var assignedUserId in requirementDto.AssignedUsers)
                     {
-                        await _repository.AddRequirementRelationAsync(savedRequirement.Id, relatedId);
-                    }
-                    else
-                    {
-                        throw new ArgumentException($"Related Requirement with ID {relatedId} does not exist.");
+                        var userExists = await _repository.ValidateUserExistsAsync(assignedUserId);
+                        Console.WriteLine($"Validating user {assignedUserId}: Exists? {userExists}");
+                        if (!userExists)
+                        {
+                            throw new ArgumentException($"The user {assignedUserId} does not exist.");
+                        }
+                        await _repository.AddUserToRequirementAsync(savedRequirement.Id, assignedUserId);
                     }
                 }
+
+
+                // Manejar requerimientos relacionados
+                if (requirementDto.RelatedRequirementIds != null && requirementDto.RelatedRequirementIds.Any())
+                {
+                    foreach (var relatedId in requirementDto.RelatedRequirementIds)
+                    {
+                        var exists = await _repository.ValidateRequirementExistsAsync(relatedId);
+                        if (exists)
+                        {
+                            var relationExists = await _repository.ValidateRequirementRelationExistsAsync(savedRequirement.Id, relatedId);
+                            if (!relationExists)
+                            {
+                                await _repository.AddRequirementRelationAsync(savedRequirement.Id, relatedId);
+                            }
+                        }
+                    }
+                }
+
+                // Notificar a los observadores
+                _notifier.NotifyObservers(savedRequirement, "Creado", userId, "Requirement created successfully.");
+
+                // Preparar la respuesta
+                return new RequirementResponseDto
+                {
+                    Id = savedRequirement.Id,
+                    Subject = savedRequirement.Subject,
+                    Code = savedRequirement.Code,
+                    Description = savedRequirement.Description,
+                    RequirementType = await _repository.GetRequirementTypeNameAsync(savedRequirement.RequirementTypeId),
+                    Category = await _repository.GetCategoryNameAsync(savedRequirement.CategoryId),
+                    Priority = savedRequirement.PriorityId.HasValue
+                        ? await _repository.GetPriorityNameAsync(savedRequirement.PriorityId.Value)
+                        : "Sin prioridad",
+                    Date = savedRequirement.Date,
+                    Status = savedRequirement.Status
+                };
             }
-
-            // Notificar a los observadores (usando el patrón Observer)
-            _notifier.NotifyObservers(savedRequirement, "Creado", null, "Requirement created successfully.");
-
-            // Preparar la respuesta
-            return new RequirementResponseDto
+            catch (ArgumentException ex)
             {
-                Id = savedRequirement.Id,
-                Subject = savedRequirement.Subject,
-                Description = savedRequirement.Description,
-                Code = savedRequirement.Code,
-                RequirementType = await _repository.GetRequirementTypeNameAsync(savedRequirement.RequirementTypeId),
-                Category = await _repository.GetCategoryNameAsync(savedRequirement.CategoryId),
-                Priority = savedRequirement.PriorityId.HasValue
-                    ? await _repository.GetPriorityNameAsync(savedRequirement.PriorityId.Value)
-                    : null,
-                Date = savedRequirement.Date,
-                Status = savedRequirement.Status
-            };
+                Console.WriteLine($"Validation error: {ex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al crear requerimiento: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task<RequirementResponseDto> UpdateRequirementAsync(int requirementId, RequirementUpdateDto updateDto, string userId)
         {
-            // Obtener el requerimiento
             var requirement = await _repository.GetByIdAsync(requirementId);
             if (requirement == null)
             {
                 throw new ArgumentException("Requirement not found.");
             }
 
-            // Registrar los cambios
             var details = new Dictionary<string, string>();
 
             if (!string.IsNullOrEmpty(updateDto.Subject) && updateDto.Subject != requirement.Subject)
@@ -121,7 +142,7 @@ namespace trackit.server.Services
             {
                 var oldPriority = requirement.PriorityId.HasValue
                     ? await _repository.GetPriorityNameAsync(requirement.PriorityId.Value)
-                    : "None";
+                    : "Sin prioridad";
                 var newPriority = await _repository.GetPriorityNameAsync(updateDto.PriorityId.Value);
 
                 details.Add("Priority (Before)", oldPriority);
@@ -136,13 +157,9 @@ namespace trackit.server.Services
                 requirement.Status = updateDto.Status;
             }
 
-            // Guardar los cambios
             await _repository.UpdateAsync(requirement);
-
-            // Notificar a los observadores (usando el patrón Observer)
             _notifier.NotifyObservers(requirement, "Modificado", userId, string.Join(", ", details.Select(d => $"{d.Key}: {d.Value}")));
 
-            // Preparar y devolver la respuesta
             return new RequirementResponseDto
             {
                 Id = requirement.Id,
@@ -159,7 +176,6 @@ namespace trackit.server.Services
             };
         }
 
-        // Método para validar si un tipo y categoría son válidos
         public async Task<bool> ValidateTypeAndCategoryAsync(int typeId, int categoryId)
         {
             return await _repository.ValidateTypeAndCategoryAsync(typeId, categoryId);
