@@ -1,35 +1,39 @@
-﻿using trackit.server.Models;
-using trackit.server.Repositories.Interfaces;
+﻿using trackit.server.Repositories.Interfaces;
 using trackit.server.Services.Interfaces;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace trackit.server.Services
+public class RequirementActionService : IRequirementActionService
 {
-    public class RequirementActionService : IRequirementActionService
+    private readonly IRequirementActionLogRepository _logRepository;
+
+    public RequirementActionService(IRequirementActionLogRepository logRepository)
     {
-        private readonly IRequirementActionLogRepository _logRepository;
+        _logRepository = logRepository;
+    }
 
-        public RequirementActionService(IRequirementActionLogRepository logRepository)
+    public async Task LogActionAsync(int requirementId, string action, string details, string performedByUserId)
+    {
+        var log = new RequirementActionLog
         {
-            _logRepository = logRepository;
-        }
+            RequirementId = requirementId,
+            Action = action,
+            Details = details,
+            Timestamp = DateTime.UtcNow,
+            PerformedByUserId = performedByUserId
+        };
 
-        public async Task LogActionAsync(int requirementId, string action, string userId, string details = null)
-        {
-            var log = new RequirementActionLog
-            {
-                RequirementId = requirementId,
-                Action = action,
-                PerformedBy = userId,
-                Timestamp = DateTime.UtcNow,
-                Details = details
-            };
+        await _logRepository.AddActionLogAsync(log);
+    }
 
-            await _logRepository.AddLogAsync(log);
-        }
+    public async Task<List<RequirementActionLog>> GetLogsByRequirementIdAsync(int requirementId)
+    {
+        return await _logRepository.GetLogsByRequirementIdAsync(requirementId);
+    }
 
-        public async Task<IEnumerable<RequirementActionLog>> GetLogsAsync(int requirementId)
-        {
-            return await _logRepository.GetLogsByRequirementIdAsync(requirementId);
-        }
+    public async Task<List<RequirementActionLog>> GetLogsAsync(int requirementId)
+    {
+        // Este método puede ser redundante con `GetLogsByRequirementIdAsync`.
+        return await _logRepository.GetLogsByRequirementIdAsync(requirementId);
     }
 }

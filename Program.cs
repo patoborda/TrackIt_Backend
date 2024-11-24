@@ -59,8 +59,8 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["Jwt:Audience"],
         ValidateLifetime = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-        };
-    });
+    };
+});
 
 // Configuración de Cloudinary
 var cloudinaryConfig = builder.Configuration.GetSection("Cloudinary");
@@ -102,7 +102,6 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-
 // Inyección de dependencias
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -123,8 +122,6 @@ builder.Services.AddScoped<IRequirementRepository, RequirementRepository>();
 builder.Services.AddScoped<IRequirementService, RequirementService>();
 builder.Services.AddScoped<IRequirementActionLogRepository, RequirementActionLogRepository>();
 builder.Services.AddScoped<IRequirementActionService, RequirementActionService>();
-builder.Services.AddSingleton<RequirementNotifier>();
-builder.Services.AddTransient<IRequirementObserver, ActionLogObserver>();
 builder.Services.AddTransient<AppInitializationService>(); // Servicio de inicialización
 builder.Services.AddScoped<IRequirementTypeRepository, RequirementTypeRepository>();
 builder.Services.AddScoped<IRequirementTypeService, RequirementTypeService>();
@@ -134,6 +131,7 @@ builder.Services.AddScoped<IPriorityService, PriorityService>();
 builder.Services.AddScoped<IPriorityRepository, PriorityRepository>();
 
 var app = builder.Build();
+
 
 // Configurar middleware para manejo de excepciones
 app.UseMiddleware<ExceptionHandlingMiddleware>(); // Middleware de manejo de excepciones debe estar primero

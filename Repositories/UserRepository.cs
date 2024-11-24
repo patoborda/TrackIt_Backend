@@ -156,6 +156,16 @@ namespace trackit.server.Repositories
             }
             return user;
         }
+        public async Task<List<User>> GetAssignedUsersAsync(int requirementId)
+        {
+            var assignedUsers = await _userDbContext.UserRequirements
+                .Where(ur => ur.RequirementId == requirementId)
+                .Select(ur => ur.User)
+                .ToListAsync();
+
+            return assignedUsers;
+        }
+
     }
 
 }

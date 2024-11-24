@@ -1,14 +1,26 @@
-﻿using System;
-using trackit.server.Models;
+﻿using trackit.server.Repositories.Interfaces;
+using trackit.server.Services;
 
-namespace trackit.server.Services
+public class ActionLogObserver 
 {
-    public class ActionLogObserver : IRequirementObserver
+    private readonly IRequirementActionLogRepository _actionLogRepository;
+
+    public ActionLogObserver(IRequirementActionLogRepository actionLogRepository)
     {
-        public void Update(Requirement requirement, string action, string performedBy, string details)
+        _actionLogRepository = actionLogRepository;
+    }
+
+    public async Task UpdateAsync(Requirement requirement, string action, string userId, string details)
+    {
+        var logEntry = new RequirementActionLog
         {
-            // Aquí puedes registrar la acción en la base de datos o simplemente mostrarla en consola
-            Console.WriteLine($"Requirement ID: {requirement.Id}, Action: {action}, Performed By: {performedBy}, Details: {details}");
-        }
+            RequirementId = requirement.Id,
+            Action = action,
+            PerformedByUserId = userId,
+            Details = details,
+            Timestamp = DateTime.UtcNow
+        };
+
+        await _actionLogRepository.AddActionLogAsync(logEntry);
     }
 }

@@ -1,13 +1,9 @@
-﻿namespace trackit.server.Models
+﻿public class RequirementActionLog
 {
-    public class RequirementActionLog
-    {
-        public int Id { get; set; }
-        public int RequirementId { get; set; }
-        public Requirement Requirement { get; set; }
-        public string Action { get; set; } // Acción realizada ("Modificado", "Comentario Agregado", etc.)
-        public string PerformedBy { get; set; } // Usuario que realizó la acción
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow; // Fecha y hora
-        public string Details { get; set; } // Información sobre los cambios (JSON con "antes" y "después")
-    }
+    public int Id { get; set; }
+    public int RequirementId { get; set; }
+    public string Action { get; set; } // Ejemplo: "Creado", "Modificado", "Asignado"
+    public string Details { get; set; } // Detalles específicos de la acción
+    public DateTime Timestamp { get; set; }
+    public string PerformedByUserId { get; set; }
 }

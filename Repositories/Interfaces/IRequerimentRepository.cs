@@ -26,6 +26,7 @@ namespace trackit.server.Repositories.Interfaces
         Task DeleteAsync(Requirement requirement);
         Task DeleteUserAssignmentsAsync(int requirementId);
         Task DeleteRequirementRelationsAsync(int requirementId);
+        Task<List<User>> GetAssignedUsersAsync(int requirementId);
 
 
     }

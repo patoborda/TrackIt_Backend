@@ -60,6 +60,13 @@ namespace trackit.server.Repositories
             return await _context.RequirementRelations
                 .AnyAsync(rr => rr.RequirementId == requirementId && rr.RelatedRequirementId == relatedRequirementId);
         }
+        public async Task<List<User>> GetAssignedUsersAsync(int requirementId)
+        {
+            return await _context.UserRequirements
+                .Where(ur => ur.RequirementId == requirementId)
+                .Select(ur => ur.User)
+                .ToListAsync();
+        }
 
 
         public async Task AddRequirementRelationAsync(int requirementId, int relatedRequirementId)
