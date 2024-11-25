@@ -66,11 +66,14 @@ namespace trackit.server.Services
                     // Si el rol no existe, eliminar el usuario creado
                     await _userRepository.DeleteUserAsync(internalUser);
                     throw new Exception("Role 'Interno' does not exist. User creation has been rolled back.");
-                }     
+                }
+
+                // Normalizar el clientUri para evitar barras diagonales al final
+                var normalizedClientUri = registerInternalUserDto.ClientUri.TrimEnd('/');
 
                 // Generar el token de confirmación de email
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(internalUser);
-                var confirmLink = $"{registerInternalUserDto.ClientUri}/confirm-email?userId={internalUser.Id}&token={Uri.EscapeDataString(token)}";
+                var confirmLink = $"{registerInternalUserDto.ClientUri}?userId={internalUser.Id}&token={Uri.EscapeDataString(token)}";
 
                 // Enviar correo de confirmación
                 var subject = "Email Confirmation";
@@ -117,11 +120,12 @@ namespace trackit.server.Services
                     await _userRepository.DeleteUserAsync(externalUser);
                     throw new Exception("Role 'Externo' does not exist. User creation has been rolled back.");
                 }
- 
 
+                // Normalizar el clientUri para evitar barras diagonales al final
+                var normalizedClientUri = registerExternalUserDto.ClientUri.TrimEnd('/');
                 // Generar el token de confirmación de email
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(externalUser);
-                var confirmLink = $"{registerExternalUserDto.ClientUri}/confirm-email?userId={externalUser.Id}&token={Uri.EscapeDataString(token)}";
+                var confirmLink = $"{registerExternalUserDto.ClientUri}?userId={externalUser.Id}&token={Uri.EscapeDataString(token)}";
 
                 // Enviar correo de confirmación
                 var subject = "Email Confirmation";
@@ -162,7 +166,7 @@ namespace trackit.server.Services
                 var userId = user.Id;
 
                 // Generar el enlace de restablecimiento de contraseña
-                var resetLink = $"{normalizedClientUri}/reset-password?userId={userId}&token={encodedToken}";
+                var resetLink = $"{normalizedClientUri}?userId={userId}&token={encodedToken}";
 
                 var subject = "Password Reset Request";
                 var body = $"<p>To reset your password, click the link below:</p><p><a href='{resetLink}'>Reset Password</a></p>";
