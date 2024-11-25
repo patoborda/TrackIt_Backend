@@ -22,21 +22,33 @@ namespace trackit.server.Repositories
 
         public async Task AddUserNotificationAsync(string userId, int notificationId)
         {
-            var userNotification = new UserNotification
-            {
-                UserId = userId,
-                NotificationId = notificationId,
-                IsRead = false // Estado inicial
-            };
+            var existingNotification = await _context.UserNotifications
+                .AsNoTracking()
+                .FirstOrDefaultAsync(un => un.UserId == userId && un.NotificationId == notificationId);
 
-            _context.Add(userNotification);
-            await _context.SaveChangesAsync();
+            if (existingNotification == null)
+            {
+                var userNotification = new UserNotification
+                {
+                    UserId = userId,
+                    NotificationId = notificationId,
+                    IsRead = false
+                };
+
+                _context.UserNotifications.Add(userNotification);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                Console.WriteLine($"UserNotification already exists for UserId={userId}, NotificationId={notificationId}");
+            }
         }
 
         public async Task<IEnumerable<Notification>> GetUserNotificationsAsync(string userId, int page, int size)
         {
             return await _context.UserNotifications
                 .Where(un => un.UserId == userId)
+                .Include(un => un.Notification) // Asegura que se incluyan los datos de la notificación
                 .Select(un => un.Notification)
                 .OrderByDescending(n => n.Timestamp)
                 .Skip((page - 1) * size)
@@ -54,6 +66,17 @@ namespace trackit.server.Repositories
                 userNotification.IsRead = true;
                 await _context.SaveChangesAsync();
             }
+            else
+            {
+                Console.WriteLine($"No UserNotification found for UserId={userId}, NotificationId={notificationId}");
+            }
+        }
+
+        public async Task<UserNotification?> GetUserNotificationAsync(string userId, int notificationId)
+        {
+            return await _context.UserNotifications
+                .AsNoTracking()
+                .FirstOrDefaultAsync(un => un.UserId == userId && un.NotificationId == notificationId);
         }
 
     }

@@ -13,18 +13,21 @@ public class RequirementService : IRequirementService
     private readonly IRequirementRepository _repository;
     private readonly IUserRepository _userRepository;
     private readonly IRequirementActionService _actionService;
-    private readonly RequirementNotifier _notifier; // Notificador
+    private readonly INotificationRepository _notificationRepository;
+    private readonly RequirementNotifier _notifier;
 
     public RequirementService(
         IRequirementRepository repository,
         IUserRepository userRepository,
         IRequirementActionService actionService,
-        RequirementNotifier notifier) // Agregado RequirementNotifier
+        INotificationRepository notificationRepository,
+        RequirementNotifier notifier)
     {
         _repository = repository;
         _userRepository = userRepository;
         _actionService = actionService;
-        _notifier = notifier; // Asignación
+        _notificationRepository = notificationRepository;
+        _notifier = notifier;
     }
 
     public async Task<RequirementResponseDto> CreateRequirementAsync(RequirementCreateDto requirementDto, string userId)
@@ -59,7 +62,16 @@ public class RequirementService : IRequirementService
 
             var savedRequirement = await _repository.AddAsync(newRequirement);
 
-            // Asignar usuarios y enviar notificaciones
+            // Crear notificación general para el requerimiento
+            var notification = new Notification
+            {
+                Message = $"New requirement created: {savedRequirement.Subject}",
+                Timestamp = DateTime.UtcNow,
+                IsRead = false
+            };
+            await _notificationRepository.AddNotificationAsync(notification);
+
+            // Asociar usuarios asignados a la notificación y enviar notificaciones
             if (requirementDto.AssignedUsers != null)
             {
                 foreach (var assignedUserId in requirementDto.AssignedUsers)
@@ -69,10 +81,16 @@ public class RequirementService : IRequirementService
 
                     await _repository.AddUserToRequirementAsync(savedRequirement.Id, assignedUserId);
 
+                    var existingNotification = await _notificationRepository.GetUserNotificationAsync(assignedUserId, notification.Id);
+                    if (existingNotification == null)
+                    {
+                        await _notificationRepository.AddUserNotificationAsync(assignedUserId, notification.Id);
+                    }
+
+                    // Notificar al usuario asignado por email
                     var user = await _userRepository.GetUserByIdAsync(assignedUserId);
                     if (user != null && !string.IsNullOrEmpty(user.Email))
                     {
-                        // Notificar al usuario asignado
                         await _notifier.NotifyAllAsync("Requirement Assigned", new EmailNotificationData
                         {
                             Email = user.Email,
@@ -86,26 +104,29 @@ public class RequirementService : IRequirementService
                 }
             }
 
-            // Obtener todos los usuarios internos
+            // Notificar a todos los usuarios internos sobre el nuevo requerimiento
             var internalUsers = await _userRepository.GetInternalUsersAsync();
-
             if (internalUsers.Any())
             {
                 foreach (var internalUser in internalUsers)
                 {
-                    await _notifier.NotifyAllAsync("New Requirement Created", new InternalNotificationData
+                    var existingNotification = await _notificationRepository.GetUserNotificationAsync(internalUser.Id, notification.Id);
+                    if (existingNotification == null)
                     {
-                        UserIds = internalUsers.Select(u => u.Id).ToList(), // Pasar todos los IDs de usuarios internos
-                        Content = $"A new requirement titled '{savedRequirement.Subject}' has been created."
-                    });
-
+                        await _notificationRepository.AddUserNotificationAsync(internalUser.Id, notification.Id);
+                    }
                 }
+
+                await _notifier.NotifyAllAsync("New Requirement Created", new InternalNotificationData
+                {
+                    UserIds = internalUsers.Select(u => u.Id).ToList(),
+                    Content = $"A new requirement titled '{savedRequirement.Subject}' has been created."
+                });
             }
             else
             {
                 Console.WriteLine("No internal users found to notify.");
             }
-
 
             // Registrar acción de creación
             await _actionService.LogActionAsync(savedRequirement.Id, "Created", "Requirement created successfully.", userId);
@@ -118,114 +139,113 @@ public class RequirementService : IRequirementService
             throw;
         }
     }
+        public async Task<RequirementResponseDto> UpdateRequirementAsync(int requirementId, RequirementUpdateDto updateDto, string userId)
+        {
+            try
+            {
+                var requirement = await _repository.GetByIdAsync(requirementId);
+                if (requirement == null)
+                    throw new ArgumentException("Requirement not found.");
 
-    public async Task<RequirementResponseDto> UpdateRequirementAsync(int requirementId, RequirementUpdateDto updateDto, string userId)
-    {
-        try
+                var details = new Dictionary<string, string>();
+
+                // Actualizar campos y capturar detalles
+                if (!string.IsNullOrEmpty(updateDto.Subject) && updateDto.Subject != requirement.Subject)
+                {
+                    details.Add("Subject", $"{requirement.Subject} → {updateDto.Subject}");
+                    requirement.Subject = updateDto.Subject;
+                }
+
+                if (!string.IsNullOrEmpty(updateDto.Description) && updateDto.Description != requirement.Description)
+                {
+                    details.Add("Description", $"{requirement.Description} → {updateDto.Description}");
+                    requirement.Description = updateDto.Description;
+                }
+
+                await _repository.UpdateAsync(requirement);
+
+                // Notificar usuarios asignados sobre la actualización
+                var assignedUsers = await _repository.GetAssignedUsersAsync(requirement.Id);
+                foreach (var user in assignedUsers)
+                {
+                    if (!string.IsNullOrEmpty(user.Email))
+                    {
+                        await _notifier.NotifyAllAsync("Requirement Updated", new EmailNotificationData
+                        {
+                            Email = user.Email,
+                            Content = $"The requirement '{requirement.Subject}' has been updated. Details:\n" +
+                                      string.Join("\n", details.Select(d => $"{d.Key}: {d.Value}"))
+                        });
+                    }
+                }
+
+                // Registrar acción de actualización
+                await _actionService.LogActionAsync(requirement.Id, "Updated", string.Join("; ", details.Select(d => $"{d.Key}: {d.Value}")), userId);
+
+                return await MapToResponseDtoAsync(requirement);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating requirement: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<bool> ValidateTypeAndCategoryAsync(int typeId, int categoryId)
+        {
+            return await _repository.ValidateTypeAndCategoryAsync(typeId, categoryId);
+        }
+
+        public async Task<RequirementResponseDto> GetRequirementByIdAsync(int requirementId)
         {
             var requirement = await _repository.GetByIdAsync(requirementId);
             if (requirement == null)
                 throw new ArgumentException("Requirement not found.");
 
-            var details = new Dictionary<string, string>();
-
-            // Actualizar campos y capturar detalles
-            if (!string.IsNullOrEmpty(updateDto.Subject) && updateDto.Subject != requirement.Subject)
-            {
-                details.Add("Subject", $"{requirement.Subject} → {updateDto.Subject}");
-                requirement.Subject = updateDto.Subject;
-            }
-
-            if (!string.IsNullOrEmpty(updateDto.Description) && updateDto.Description != requirement.Description)
-            {
-                details.Add("Description", $"{requirement.Description} → {updateDto.Description}");
-                requirement.Description = updateDto.Description;
-            }
-
-            await _repository.UpdateAsync(requirement);
-
-            // Notificar usuarios asignados sobre la actualización
-            var assignedUsers = await _repository.GetAssignedUsersAsync(requirement.Id);
-            foreach (var user in assignedUsers)
-            {
-                if (!string.IsNullOrEmpty(user.Email))
-                {
-                    await _notifier.NotifyAllAsync("Requirement Updated", new EmailNotificationData
-                    {
-                        Email = user.Email,
-                        Content = $"The requirement '{requirement.Subject}' has been updated. Details:\n" +
-                                  string.Join("\n", details.Select(d => $"{d.Key}: {d.Value}"))
-                    });
-                }
-            }
-
-            // Registrar acción de actualización
-            await _actionService.LogActionAsync(requirement.Id, "Updated", string.Join("; ", details.Select(d => $"{d.Key}: {d.Value}")), userId);
-
             return await MapToResponseDtoAsync(requirement);
         }
-        catch (Exception ex)
+
+        public async Task<IEnumerable<RequirementResponseDto>> GetAllRequirementsAsync()
         {
-            Console.WriteLine($"Error updating requirement: {ex.Message}");
-            throw;
-        }
-    }
+            var requirements = await _repository.GetAllAsync();
+            var response = new List<RequirementResponseDto>();
 
-    public async Task<bool> ValidateTypeAndCategoryAsync(int typeId, int categoryId)
-    {
-        return await _repository.ValidateTypeAndCategoryAsync(typeId, categoryId);
-    }
+            foreach (var requirement in requirements)
+            {
+                response.Add(await MapToResponseDtoAsync(requirement));
+            }
 
-    public async Task<RequirementResponseDto> GetRequirementByIdAsync(int requirementId)
-    {
-        var requirement = await _repository.GetByIdAsync(requirementId);
-        if (requirement == null)
-            throw new ArgumentException("Requirement not found.");
-
-        return await MapToResponseDtoAsync(requirement);
-    }
-
-    public async Task<IEnumerable<RequirementResponseDto>> GetAllRequirementsAsync()
-    {
-        var requirements = await _repository.GetAllAsync();
-        var response = new List<RequirementResponseDto>();
-
-        foreach (var requirement in requirements)
-        {
-            response.Add(await MapToResponseDtoAsync(requirement));
+            return response;
         }
 
-        return response;
-    }
-
-    public async Task DeleteRequirementAsync(int requirementId)
-    {
-        var requirement = await _repository.GetByIdAsync(requirementId);
-        if (requirement == null)
-            throw new ArgumentException("Requirement not found.");
-
-        // Registrar acción de eliminación
-        await _actionService.LogActionAsync(requirementId, "Deleted", "Requirement deleted.", requirement.CreatedByUserId);
-
-        // Eliminar el requerimiento
-        await _repository.DeleteAsync(requirement);
-    }
-
-    private async Task<RequirementResponseDto> MapToResponseDtoAsync(Requirement requirement)
-    {
-        return new RequirementResponseDto
+        public async Task DeleteRequirementAsync(int requirementId)
         {
-            Id = requirement.Id,
-            Subject = requirement.Subject,
-            Code = requirement.Code,
-            Description = requirement.Description,
-            RequirementType = await _repository.GetRequirementTypeNameAsync(requirement.RequirementTypeId),
-            Category = await _repository.GetCategoryNameAsync(requirement.CategoryId),
-            Priority = requirement.PriorityId.HasValue
-                ? await _repository.GetPriorityNameAsync(requirement.PriorityId.Value)
-                : null,
-            Date = requirement.Date,
-            Status = requirement.Status
-        };
+            var requirement = await _repository.GetByIdAsync(requirementId);
+            if (requirement == null)
+                throw new ArgumentException("Requirement not found.");
+
+            // Registrar acción de eliminación
+            await _actionService.LogActionAsync(requirementId, "Deleted", "Requirement deleted.", requirement.CreatedByUserId);
+
+            // Eliminar el requerimiento
+            await _repository.DeleteAsync(requirement);
+        }
+
+        private async Task<RequirementResponseDto> MapToResponseDtoAsync(Requirement requirement)
+        {
+            return new RequirementResponseDto
+            {
+                Id = requirement.Id,
+                Subject = requirement.Subject,
+                Code = requirement.Code,
+                Description = requirement.Description,
+                RequirementType = await _repository.GetRequirementTypeNameAsync(requirement.RequirementTypeId),
+                Category = await _repository.GetCategoryNameAsync(requirement.CategoryId),
+                Priority = requirement.PriorityId.HasValue
+                    ? await _repository.GetPriorityNameAsync(requirement.PriorityId.Value)
+                    : null,
+                Date = requirement.Date,
+                Status = requirement.Status
+            };
+        }
     }
-}

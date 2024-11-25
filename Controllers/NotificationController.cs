@@ -19,13 +19,16 @@ namespace trackit.server.Controllers
             _notificationRepository = notificationRepository;
         }
 
-        [HttpGet("{userId}")]
+        /// <summary>
+        /// Obtener notificaciones paginadas para un usuario específico.
+        /// </summary>
+        [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetNotifications(
             string userId,
             [FromQuery] int page = 1,
             [FromQuery] int size = 10)
         {
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrWhiteSpace(userId))
                 return BadRequest(new { message = "User ID cannot be null or empty." });
 
             if (page < 1 || size < 1)
@@ -52,28 +55,37 @@ namespace trackit.server.Controllers
             }
             catch (Exception ex)
             {
+                // Manejo de excepciones genérico
                 return StatusCode(500, new { message = $"Error retrieving notifications: {ex.Message}" });
             }
         }
 
-        [HttpPost("mark-as-read/{notificationId}")]
+        /// <summary>
+        /// Marcar una notificación como leída.
+        /// </summary>
+        [HttpPost("user/{userId}/mark-as-read/{notificationId}")]
         public async Task<IActionResult> MarkAsRead(string userId, int notificationId)
         {
-            if (string.IsNullOrEmpty(userId) || notificationId <= 0)
+            if (string.IsNullOrWhiteSpace(userId) || notificationId <= 0)
             {
                 return BadRequest(new { message = "Invalid user ID or notification ID." });
             }
 
             try
             {
+                // Marca la notificación como leída
                 await _notificationRepository.MarkAsReadAsync(userId, notificationId);
                 return Ok(new { message = "Notification marked as read successfully." });
             }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { message = $"Notification with ID {notificationId} not found for user {userId}." });
+            }
             catch (Exception ex)
             {
+                // Manejo de excepciones genérico
                 return StatusCode(500, new { message = $"Error marking notification as read: {ex.Message}" });
             }
         }
-
     }
 }
