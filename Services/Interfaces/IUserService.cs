@@ -17,8 +17,9 @@ namespace trackit.server.Services
         Task<List<UserProfileDto>> GetAllUsersAsync();
         Task<List<InternalUserProfileDto>> GetInternalUsersAsync();
         Task<List<ExternalUserProfileDto>> GetExternalUsersAsync();
-
+        Task<bool> UpdateUserStatusAsync(string userId, bool isEnabled);
         Task<User> UploadImageAsync(IFormFile file, string userId);
         Task AssignDefaultImageToAllUsersAsync();
+        Task<User> GetUserByEmailAsync(string email);
     }
 }

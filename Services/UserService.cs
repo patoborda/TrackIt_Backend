@@ -348,8 +348,20 @@ namespace trackit.server.Services
             return userDtos;
         }
 
+        public async Task<bool> UpdateUserStatusAsync(string userId, bool isEnabled)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
 
-        /*******************************************************************************************************************/
+            if (user == null)
+            {
+                return false;  // Usuario no encontrado
+            }
+
+            user.IsEnabled = isEnabled;  // Cambiar el estado IsEnabled del usuario
+
+            var result = await _userManager.UpdateAsync(user);
+            return result.Succeeded;
+        }
 
         // Subir la imagen para un usuario
         public async Task<User> UploadImageAsync(IFormFile file, string userId)
@@ -363,6 +375,11 @@ namespace trackit.server.Services
         public async Task AssignDefaultImageToAllUsersAsync()
         {
             await _userRepository.AssignDefaultImageToAllUsersAsync();
+        }
+
+        public async Task<User> GetUserByEmailAsync(string email)
+        {
+            return await _userRepository.GetUserByEmailAsync(email);
         }
 
     }
