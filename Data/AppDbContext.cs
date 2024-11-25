@@ -20,6 +20,8 @@ namespace trackit.server.Data
         public DbSet<UserRequirement> UserRequirements { get; set; }
         public DbSet<Comment> Comments { get; set; }
         public DbSet<AttachedFile> AttachedFiles { get; set; }
+        public DbSet<Notification> Notifications { get; set; } // Asegúrate de agregar esto
+        public DbSet<UserNotification> UserNotifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -117,7 +119,21 @@ namespace trackit.server.Data
                 .HasMany(c => c.Files)
                 .WithOne()
                 .OnDelete(DeleteBehavior.Cascade);
+            // Configuración de la relación muchos-a-muchos entre User y Notification
+            modelBuilder.Entity<UserNotification>()
+          .HasKey(un => new { un.UserId, un.NotificationId });
 
+            modelBuilder.Entity<UserNotification>()
+                .HasOne(un => un.User)
+                .WithMany(u => u.UserNotifications)
+                .HasForeignKey(un => un.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<UserNotification>()
+                .HasOne(un => un.Notification)
+                .WithMany(n => n.UserNotifications)
+                .HasForeignKey(un => un.NotificationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Seed Data para RequirementType
             modelBuilder.Entity<RequirementType>().HasData(

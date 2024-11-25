@@ -1,7 +1,7 @@
-﻿using trackit.server.Repositories.Interfaces;
-using trackit.server.Services;
+﻿using trackit.server.Patterns.Observer;
+using trackit.server.Repositories.Interfaces;
 
-public class ActionLogObserver 
+public class ActionLogObserver : IObserver
 {
     private readonly IRequirementActionLogRepository _actionLogRepository;
 
@@ -10,14 +10,14 @@ public class ActionLogObserver
         _actionLogRepository = actionLogRepository;
     }
 
-    public async Task UpdateAsync(Requirement requirement, string action, string userId, string details)
+    public async Task NotifyAsync(string message, object data)
     {
         var logEntry = new RequirementActionLog
         {
-            RequirementId = requirement.Id,
-            Action = action,
-            PerformedByUserId = userId,
-            Details = details,
+            RequirementId = ((Requirement)data).Id, // Cast data a Requirement
+            Action = message,
+            PerformedByUserId = "system", // Puedes parametrizar esto si es necesario
+            Details = "Action logged",
             Timestamp = DateTime.UtcNow
         };
 

@@ -14,10 +14,14 @@ namespace trackit.server.Models
         public ExternalUser? ExternalUser { get; set; }
         public AdminUser? AdminUser { get; set; }
 
-        // Relación muchos a muchos con Requirements
+        // Relación muchos-a-muchos con Requirements
         public ICollection<UserRequirement> UserRequirements { get; set; } = new List<UserRequirement>();
-        // Propiedad de navegación: Un usuario puede tener muchos comentarios
-        public List<Comment> Comments { get; set; } = new();
+
+        // Relación muchos-a-muchos con Notifications
+        public ICollection<UserNotification> UserNotifications { get; set; } = new List<UserNotification>();
+
+        // Relación uno-a-muchos con Comments
+        public List<Comment> Comments { get; set; } = new List<Comment>();
     }
 
     // Clase para datos específicos del usuario interno
@@ -51,4 +55,6 @@ namespace trackit.server.Models
         // Relación inversa con User
         public User User { get; set; } = null!;
     }
+
+
 }

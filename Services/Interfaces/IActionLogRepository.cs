@@ -1,4 +1,4 @@
-﻿namespace trackit.server.Repositories.Interfaces
+﻿/*namespace trackit.server.Repositories.Interfaces
 {
     public interface IActionLogRepository
     {
@@ -6,3 +6,4 @@
         Task<List<RequirementActionLog>> GetLogsByRequirementIdAsync(int requirementId);
     }
 }
+*/

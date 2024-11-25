@@ -5,6 +5,7 @@ using trackit.server.Models;
 using trackit.server.Repositories.Interfaces;
 using trackit.server.Repositories;
 using trackit.server.Services;
+using trackit.server.Patterns.Observer; // Importar el patrón Observer
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -12,7 +13,6 @@ using trackit.server.Middlewares;
 using trackit.server.Services.Interfaces;
 using trackit.server.Factories.UserFactories;
 using CloudinaryDotNet;
-using Microsoft.Extensions.Configuration;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -88,24 +88,24 @@ builder.Services.AddSingleton(new Cloudinary(cloudinaryAccount));
 // Configuración de Swagger con autenticación JWT
 builder.Services.AddSwaggerGen(options =>
 {
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer",
         BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        In = ParameterLocation.Header,
         Description = "Ingrese 'Bearer {token}' en el campo de autorización."
     });
 
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            new OpenApiSecurityScheme
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                Reference = new OpenApiReference
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
                 }
             },
@@ -114,10 +114,15 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Inyección de dependencias
+// **Inyección de dependencias del Patrón Observer**
+builder.Services.AddSingleton<RequirementNotifier>(); // Registrar el notificador como Singleton
+builder.Services.AddScoped<IObserver, InternalNotificationObserver>(); // Observador de notificaciones internas
+builder.Services.AddScoped<IObserver, EmailNotificationObserver>();   // Observador de notificaciones por correo
+builder.Services.AddScoped<IObserver, ActionLogObserver>();
+// Inyección de dependencias generales
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IEmailService, EmailService>();  // Servicio de correo
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 
@@ -125,16 +130,15 @@ builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IInternalUserFactory, InternalUserFactory>();
 builder.Services.AddScoped<IExternalUserFactory, ExternalUserFactory>();
 
-// Configurar controladores y Swagger
+// Configuración de controladores
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 // Registrar repositorios y servicios para Requirements
 builder.Services.AddScoped<IRequirementRepository, RequirementRepository>();
-builder.Services.AddScoped<IRequirementService, RequirementService>();
+builder.Services.AddScoped<IRequirementService, RequirementService>(); // Usa el RequirementNotifier
 builder.Services.AddScoped<IRequirementActionLogRepository, RequirementActionLogRepository>();
 builder.Services.AddScoped<IRequirementActionService, RequirementActionService>();
-builder.Services.AddTransient<AppInitializationService>(); // Servicio de inicialización
 builder.Services.AddScoped<IRequirementTypeRepository, RequirementTypeRepository>();
 builder.Services.AddScoped<IRequirementTypeService, RequirementTypeService>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -143,8 +147,13 @@ builder.Services.AddScoped<IPriorityService, PriorityService>();
 builder.Services.AddScoped<IPriorityRepository, PriorityRepository>();
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+
+// Registrar middleware de manejo de excepciones
+builder.Services.AddTransient<AppInitializationService>(); // Servicio de inicialización
 
 var app = builder.Build();
+var notifier = app.Services.GetRequiredService<RequirementNotifier>();
 
 // Configurar middleware para manejo de excepciones
 app.UseMiddleware<ExceptionHandlingMiddleware>(); // Middleware de manejo de excepciones debe estar primero
@@ -152,15 +161,25 @@ app.UseMiddleware<ExceptionHandlingMiddleware>(); // Middleware de manejo de exc
 // Ejecutar la creación del Admin si no existe al iniciar la aplicación
 using (var scope = app.Services.CreateScope())
 {
-    var appInitializationService = scope.ServiceProvider.GetRequiredService<AppInitializationService>();
-    await appInitializationService.CreateAdminIfNotExistsAsync(); // Crear admin
-}
+    var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+    var emailObserver = new EmailNotificationObserver(emailService);
 
-// Configurar roles
+    // Adjuntar el observador de correo
+    notifier.Attach(emailObserver);
+
+    // Puedes agregar otros observadores si es necesario
+}
+// Middleware de manejo de excepciones
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+// Inicializar Admin y roles
 using (var scope = app.Services.CreateScope())
 {
+    var appInitializationService = scope.ServiceProvider.GetRequiredService<AppInitializationService>();
+    await appInitializationService.CreateAdminIfNotExistsAsync();
+
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    await RoleSeeder.SeedRoles(roleManager); // Sembrar roles si es necesario
+    await RoleSeeder.SeedRoles(roleManager);
 }
 
 // Asegúrate de usar CORS antes de cualquier otro middleware (como autenticación y autorización)
@@ -179,19 +198,16 @@ app.Use(async (context, next) =>
     await next.Invoke();
 });
 
-// Configurar la tubería de solicitudes HTTP
+// Middleware adicional para autenticación y autorización
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Middleware de autenticación y autorización
-app.UseAuthentication(); // Primero autenticamos
-app.UseAuthorization();  // Luego autorizamos
-
-// Redirigir a HTTPS si es necesario
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Mapeo de controladores
 app.MapControllers();
