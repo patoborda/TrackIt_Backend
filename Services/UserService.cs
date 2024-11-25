@@ -245,7 +245,8 @@ namespace trackit.server.Services
                     UserName = user.UserName,
                     IsEnabled = user.IsEnabled,
                     Image = user.Image,
-                    AdminSpecificAttribute = "SomeAdminData"
+                    AdminSpecificAttribute = "SomeAdminData",
+                    Role = "admin"
                 };
             }
             else if (user.InternalUser != null)
@@ -259,7 +260,8 @@ namespace trackit.server.Services
                     IsEnabled = user.IsEnabled,
                     Image = user.Image,
                     Cargo = user.InternalUser.Cargo,
-                    Departamento = user.InternalUser.Departamento
+                    Departamento = user.InternalUser.Departamento,
+                    Role = "Interno"
                 };
             }
             else if (user.ExternalUser != null)
@@ -274,7 +276,8 @@ namespace trackit.server.Services
                     Image = user.Image,
                     Cuil = user.ExternalUser.Cuil,
                     Empresa = user.ExternalUser.Empresa,
-                    Descripcion = user.ExternalUser.Descripcion
+                    Descripcion = user.ExternalUser.Descripcion,
+                    Role = "Externo"
                 };
             }
 

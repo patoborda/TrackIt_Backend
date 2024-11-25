@@ -5,6 +5,7 @@
         public string Cuil { get; set; } = null!;
         public string Empresa { get; set; } = null!;
         public string Descripcion { get; set; } = null!;
+        public string Role { get; set; }
     }
 
 }
