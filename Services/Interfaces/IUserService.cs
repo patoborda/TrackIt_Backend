@@ -21,5 +21,6 @@ namespace trackit.server.Services
         Task<User> UploadImageAsync(IFormFile file, string userId);
         Task AssignDefaultImageToAllUsersAsync();
         Task<User> GetUserByEmailAsync(string email);
+        Task SendAccountActivationEmailAsync(string email);
     }
 }

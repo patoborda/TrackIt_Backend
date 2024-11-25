@@ -350,18 +350,28 @@ namespace trackit.server.Services
 
         public async Task<bool> UpdateUserStatusAsync(string userId, bool isEnabled)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userRepository.GetUserByIdAsync(userId);
+            if (user == null) return false;
 
-            if (user == null)
+            user.IsEnabled = isEnabled;
+            var result = await _userRepository.UpdateUserAsync(user);
+
+            // Si el usuario ha sido activado, enviamos el correo
+            if (result && user.IsEnabled)
             {
-                return false;  // Usuario no encontrado
+                await SendAccountActivationEmailAsync(user.Email);
             }
 
-            user.IsEnabled = isEnabled;  // Cambiar el estado IsEnabled del usuario
-
-            var result = await _userManager.UpdateAsync(user);
-            return result.Succeeded;
+            return result;
         }
+
+        public async Task SendAccountActivationEmailAsync(string email)
+        {
+            string subject = "Your account has been activated";
+            string message = "<p>Your account has been successfully activated. You can now log in.</p>";
+            await _emailService.SendEmailAsync(email, subject, message);
+        }
+
 
         // Subir la imagen para un usuario
         public async Task<User> UploadImageAsync(IFormFile file, string userId)
