@@ -17,6 +17,19 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configuración de CORS: permite solicitudes desde http://localhost:3000
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:3000") // Permitir solicitudes desde localhost:3000
+                  .AllowAnyHeader()    // Permitir cualquier encabezado
+                  .AllowAnyMethod();   // Permitir cualquier método (GET, POST, PUT, DELETE, etc.)
+        });
+});
+
+
 // Configurar logging
 builder.Services.AddLogging(configure => configure.AddConsole());
 
