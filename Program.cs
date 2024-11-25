@@ -29,7 +29,6 @@ builder.Services.AddCors(options =>
         });
 });
 
-
 // Configurar logging
 builder.Services.AddLogging(configure => configure.AddConsole());
 
@@ -147,7 +146,6 @@ builder.Services.AddScoped<ICommentService, CommentService>();
 
 var app = builder.Build();
 
-
 // Configurar middleware para manejo de excepciones
 app.UseMiddleware<ExceptionHandlingMiddleware>(); // Middleware de manejo de excepciones debe estar primero
 
@@ -164,6 +162,10 @@ using (var scope = app.Services.CreateScope())
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     await RoleSeeder.SeedRoles(roleManager); // Sembrar roles si es necesario
 }
+
+// Asegúrate de usar CORS antes de cualquier otro middleware (como autenticación y autorización)
+app.UseCors("AllowLocalhost"); // Aplica la política CORS
+
 app.Use(async (context, next) =>
 {
     if (context.Request.Headers.ContainsKey("Authorization"))
