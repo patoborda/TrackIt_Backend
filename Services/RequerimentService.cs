@@ -140,7 +140,7 @@ public class RequirementService : IRequirementService
             throw;
         }
     }
-        public async Task<RequirementResponseDto> UpdateRequirementAsync(int requirementId, RequirementUpdateDto updateDto, string userId)
+    public async Task<RequirementResponseDto> UpdateRequirementAsync(int requirementId, RequirementUpdateDto updateDto, string userId)
         {
             try
             {
@@ -191,13 +191,11 @@ public class RequirementService : IRequirementService
                 throw;
             }
         }
-
-        public async Task<bool> ValidateTypeAndCategoryAsync(int typeId, int categoryId)
+    public async Task<bool> ValidateTypeAndCategoryAsync(int typeId, int categoryId)
         {
             return await _repository.ValidateTypeAndCategoryAsync(typeId, categoryId);
         }
-
-        public async Task<RequirementResponseDto> GetRequirementByIdAsync(int requirementId)
+    public async Task<RequirementResponseDto> GetRequirementByIdAsync(int requirementId)
         {
             var requirement = await _repository.GetByIdAsync(requirementId);
             if (requirement == null)
@@ -205,8 +203,7 @@ public class RequirementService : IRequirementService
 
             return await MapToResponseDtoAsync(requirement);
         }
-
-        public async Task<IEnumerable<RequirementResponseDto>> GetAllRequirementsAsync()
+    public async Task<IEnumerable<RequirementResponseDto>> GetAllRequirementsAsync()
         {
             var requirements = await _repository.GetAllAsync();
             var response = new List<RequirementResponseDto>();
@@ -218,7 +215,6 @@ public class RequirementService : IRequirementService
 
             return response;
         }
-
     public async Task DeleteRequirementAsync(int requirementId)
     {
         // Validar que el requerimiento exista
@@ -238,7 +234,6 @@ public class RequirementService : IRequirementService
         requirement.IsDeleted = true;
         await _repository.UpdateAsync(requirement);
     }
-
     private async Task<RequirementResponseDto> MapToResponseDtoAsync(Requirement requirement)
     {
         return new RequirementResponseDto
@@ -273,9 +268,6 @@ public class RequirementService : IRequirementService
             Status = req.Status
         }).ToList();
     }
-
-
-
     public async Task RestoreRequirementAsync(int requirementId)
     {
         // Ignorar el filtro global para encontrar requerimientos eliminados

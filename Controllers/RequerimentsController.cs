@@ -105,7 +105,7 @@ namespace trackit.server.Controllers
         }
 
         // Obtener todos los requerimientos (Solo Admin)
-       /* [Authorize(Roles = "Admin, Interno")] // Solo accesible para usuarios con el rol Admin
+        [Authorize(Roles = "Admin, Interno")] // Solo accesible para usuarios con el rol Admin
         [HttpGet]
         public async Task<IActionResult> GetAllRequirements()
         {
@@ -123,7 +123,6 @@ namespace trackit.server.Controllers
                 return StatusCode(500, new { Message = "An error occurred while retrieving the requirements.", Error = ex.Message });
             }
         }
-       */
         
         [Authorize]
         [HttpGet]
@@ -139,6 +138,7 @@ namespace trackit.server.Controllers
                 return StatusCode(500, new { message = "An error occurred while fetching the requirements.", details = ex.Message });
             }
         }
+
         [Authorize(Roles = "Admin, Interno")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRequirement(int id)
@@ -157,8 +157,6 @@ namespace trackit.server.Controllers
                 return StatusCode(500, new { Message = "An error occurred while marking the requirement as deleted.", Error = ex.Message });
             }
         }
-
-
 
         // Obtener los logs de acciones de un requerimiento
         [Authorize(Roles = "Admin, Interno")]
@@ -204,26 +202,28 @@ namespace trackit.server.Controllers
             var requirements = await _requirementService.GetAssignedRequirementsByUserIdAsync(userId);
             return Ok(requirements);
         }
+
+
         [HttpGet("{requirementId}/users-assigned")]
-[Authorize]
-public async Task<IActionResult> GetUsersAssignedToRequirement(int requirementId)
-{
-    try
-    {
-        var users = await _requirementService.GetUsersAssignedToRequirementAsync(requirementId);
+        [Authorize]
+        public async Task<IActionResult> GetUsersAssignedToRequirement(int requirementId)
+            {
+                try
+                {
+                    var users = await _requirementService.GetUsersAssignedToRequirementAsync(requirementId);
 
-        if (!users.Any())
-        {
-            return NotFound(new { message = "No users assigned to this requirement." });
-        }
+                    if (!users.Any())
+                    {
+                        return NotFound(new { message = "No users assigned to this requirement." });
+                    }
 
-        return Ok(users);
-    }
-    catch (Exception ex)
-    {
-        return StatusCode(500, new { message = "An error occurred while fetching the assigned users.", details = ex.Message });
-    }
-}
+                    return Ok(users);
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, new { message = "An error occurred while fetching the assigned users.", details = ex.Message });
+                }
+            }
 
 
     }
