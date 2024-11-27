@@ -8208,19 +8208,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Pato\\.nuget\\packages\\": {}
+    "C:\\Users\\lucho\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Repositorios GitHub\\FACULTAD\\DISEÑO DE SISTEMAS\\TrackIt_Backend\\trackit.server.csproj",
+      "projectUniqueName": "D:\\repositorio\\facultad\\TrackIt\\BackEnd\\TrackIt_Backend\\trackit.server.csproj",
       "projectName": "trackit.server",
-      "projectPath": "D:\\Repositorios GitHub\\FACULTAD\\DISEÑO DE SISTEMAS\\TrackIt_Backend\\trackit.server.csproj",
-      "packagesPath": "C:\\Users\\Pato\\.nuget\\packages\\",
-      "outputPath": "D:\\Repositorios GitHub\\FACULTAD\\DISEÑO DE SISTEMAS\\TrackIt_Backend\\obj\\",
+      "projectPath": "D:\\repositorio\\facultad\\TrackIt\\BackEnd\\TrackIt_Backend\\trackit.server.csproj",
+      "packagesPath": "C:\\Users\\lucho\\.nuget\\packages\\",
+      "outputPath": "D:\\repositorio\\facultad\\TrackIt\\BackEnd\\TrackIt_Backend\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\Pato\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\lucho\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [

@@ -20,35 +20,38 @@ namespace trackit.server.Data
         public DbSet<UserRequirement> UserRequirements { get; set; }
         public DbSet<Comment> Comments { get; set; }
         public DbSet<AttachedFile> AttachedFiles { get; set; }
-        public DbSet<Notification> Notifications { get; set; } // Asegúrate de agregar esto
+        public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserNotification> UserNotifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Relación uno-a-uno entre User e InternalUser
+            // Filtro global para eliminaciones lógicas
+            modelBuilder.Entity<Requirement>().HasQueryFilter(r => !r.IsDeleted);
+
+            // Configuración de la relación uno-a-uno User -> InternalUser
             modelBuilder.Entity<InternalUser>()
                 .HasOne(iu => iu.User)
                 .WithOne(u => u.InternalUser)
                 .HasForeignKey<InternalUser>(iu => iu.Id)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Relación uno-a-uno entre User y ExternalUser
+            // Configuración de la relación uno-a-uno User -> ExternalUser
             modelBuilder.Entity<ExternalUser>()
                 .HasOne(eu => eu.User)
                 .WithOne(u => u.ExternalUser)
                 .HasForeignKey<ExternalUser>(eu => eu.Id)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Relación uno-a-uno entre User y AdminUser
+            // Configuración de la relación uno-a-uno User -> AdminUser
             modelBuilder.Entity<AdminUser>()
                 .HasOne(au => au.User)
                 .WithOne(u => u.AdminUser)
                 .HasForeignKey<AdminUser>(au => au.Id)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Configuración de la relación muchos-a-muchos entre User y Requirement (UserRequirement)
+            // Configuración de la relación muchos-a-muchos User -> Requirement
             modelBuilder.Entity<UserRequirement>()
                 .HasKey(ur => new { ur.UserId, ur.RequirementId });
 
@@ -62,9 +65,10 @@ namespace trackit.server.Data
                 .HasOne(ur => ur.Requirement)
                 .WithMany(r => r.UserRequirements)
                 .HasForeignKey(ur => ur.RequirementId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
 
-            // Configuración de la relación auto-referenciada para RequirementRelation
+            // Configuración de la relación auto-referenciada RequirementRelation -> Requirement
             modelBuilder.Entity<RequirementRelation>()
                 .HasKey(rr => new { rr.RequirementId, rr.RelatedRequirementId });
 
@@ -72,40 +76,44 @@ namespace trackit.server.Data
                 .HasOne(rr => rr.Requirement)
                 .WithMany(r => r.RelatedRequirements)
                 .HasForeignKey(rr => rr.RequirementId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
 
             modelBuilder.Entity<RequirementRelation>()
                 .HasOne(rr => rr.RelatedRequirement)
                 .WithMany()
                 .HasForeignKey(rr => rr.RelatedRequirementId)
-                .OnDelete(DeleteBehavior.Restrict);
-            // Configuración de la relación con RequirementType
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
+
+            // Configuración de la relación Requirement -> RequirementType
             modelBuilder.Entity<Requirement>()
                 .HasOne(r => r.RequirementType)
                 .WithMany()
                 .HasForeignKey(r => r.RequirementTypeId)
-                .OnDelete(DeleteBehavior.Restrict); // Cambiar a Restrict para evitar cascada
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // Configuración de la relación con Category
+            // Configuración de la relación Requirement -> Category
             modelBuilder.Entity<Requirement>()
                 .HasOne(r => r.Category)
                 .WithMany()
                 .HasForeignKey(r => r.CategoryId)
-                .OnDelete(DeleteBehavior.Restrict); // Cambiar a Restrict para evitar cascada
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // Configuración de la relación con Priority
+            // Configuración de la relación Requirement -> Priority
             modelBuilder.Entity<Requirement>()
                 .HasOne(r => r.Priority)
                 .WithMany()
                 .HasForeignKey(r => r.PriorityId)
-                .OnDelete(DeleteBehavior.SetNull); // Cambiar a SetNull si PriorityId es opcional
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Configuración de la relación Comment -> Requirement
             modelBuilder.Entity<Comment>()
                 .HasOne(c => c.Requirement)
                 .WithMany(r => r.Comments)
                 .HasForeignKey(c => c.RequirementId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
 
             // Configuración de la relación Comment -> User
             modelBuilder.Entity<Comment>()
@@ -119,9 +127,10 @@ namespace trackit.server.Data
                 .HasMany(c => c.Files)
                 .WithOne()
                 .OnDelete(DeleteBehavior.Cascade);
-            // Configuración de la relación muchos-a-muchos entre User y Notification
+
+            // Configuración de la relación muchos-a-muchos User -> Notification
             modelBuilder.Entity<UserNotification>()
-          .HasKey(un => new { un.UserId, un.NotificationId });
+                .HasKey(un => new { un.UserId, un.NotificationId });
 
             modelBuilder.Entity<UserNotification>()
                 .HasOne(un => un.User)

@@ -7,6 +7,9 @@ public class Requirement
     public string Code { get; set; }
     public string Description { get; set; }
 
+    public bool IsDeleted { get; set; } = false; // Nuevo campo para eliminación lógica
+    public DateTime? RestoredAt { get; set; } // Fecha de restauración
+
     public int RequirementTypeId { get; set; }
     public RequirementType RequirementType { get; set; }
 

@@ -90,12 +90,13 @@ namespace trackit.server.Repositories
             _context.Requirements.Update(requirement);
             await _context.SaveChangesAsync();
         }
+        /*
         public async Task DeleteAsync(Requirement requirement)
         {
             _context.Requirements.Remove(requirement);
             await _context.SaveChangesAsync();
         }
-
+        */
         public async Task DeleteUserAssignmentsAsync(int requirementId)
         {
             var userAssignments = _context.UserRequirements.Where(ur => ur.RequirementId == requirementId);
@@ -142,5 +143,30 @@ namespace trackit.server.Repositories
         {
             return await _context.Users.AnyAsync(u => u.Id == userId);
         }
+
+        public async Task<IEnumerable<Requirement>> GetAllRequirementsEliminatedAsync()
+        {
+            return await _context.Requirements
+                .IgnoreQueryFilters() // Ignorar el filtro global para incluir eliminados
+                .Where(r => r.IsDeleted) // Filtrar solo los eliminados
+                .Include(r => r.RequirementType)
+                .Include(r => r.Category)
+                .Include(r => r.Priority)
+                .ToListAsync();
+        }
+        public async Task<Requirement?> GetByIdIgnoringFiltersAsync(int id)
+        {
+            return await _context.Requirements
+                .IgnoreQueryFilters() // Ignorar filtro global
+                .FirstOrDefaultAsync(r => r.Id == id);
+        }
+        public async Task<IEnumerable<Requirement>> GetRestoredRequirementsAsync()
+        {
+            return await _context.Requirements
+                .IgnoreQueryFilters()
+                .Where(r => !r.IsDeleted && r.RestoredAt != null)
+                .ToListAsync();
+        }
+
     }
 }

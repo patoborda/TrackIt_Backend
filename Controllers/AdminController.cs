@@ -4,6 +4,7 @@ using trackit.server.Services;
 using System.Linq;
 using System.Threading.Tasks;
 using trackit.server.Dtos;
+using trackit.server.Services.Interfaces;
 
 namespace trackit.server.Controllers
 {
@@ -13,11 +14,13 @@ namespace trackit.server.Controllers
     public class AdminController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IRequirementService _requirementService;
 
-        public AdminController(IUserService userService)
+        public AdminController(IUserService userService, IRequirementService requirementService) 
         {
             _userService = userService;
-        }
+            _requirementService = requirementService;
+    }
 
         // Endpoint para obtener todos los usuarios (Solo Admin)
         [HttpGet("GetAllUsers")]
@@ -127,8 +130,37 @@ namespace trackit.server.Controllers
             }
         }
 
+        [HttpGet("deletedRequirement")]
+        public async Task<IActionResult> GetDeletedRequirements()
+        {
+            try
+            {
+                var deletedRequirements = await _requirementService.GetDeletedRequirementsAsync();
+                return Ok(deletedRequirements);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while fetching deleted requirements.", Error = ex.Message });
+            }
+        }
 
-
+        [HttpPost("restore/{id}")]
+        public async Task<IActionResult> RestoreRequirement(int id)
+        {
+            try
+            {
+                await _requirementService.RestoreRequirementAsync(id);
+                return Ok(new { Message = "Requirement restored successfully" });
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while restoring the requirement.", Error = ex.Message });
+            }
+        }
 
 
     }

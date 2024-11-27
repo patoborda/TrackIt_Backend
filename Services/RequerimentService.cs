@@ -218,34 +218,83 @@ public class RequirementService : IRequirementService
             return response;
         }
 
-        public async Task DeleteRequirementAsync(int requirementId)
-        {
-            var requirement = await _repository.GetByIdAsync(requirementId);
-            if (requirement == null)
-                throw new ArgumentException("Requirement not found.");
+    public async Task DeleteRequirementAsync(int requirementId)
+    {
+        // Validar que el requerimiento exista
+        var requirement = await _repository.GetByIdAsync(requirementId);
+        if (requirement == null)
+            throw new ArgumentException("Requirement not found.");
 
-            // Registrar acción de eliminación
-            await _actionService.LogActionAsync(requirementId, "Deleted", "Requirement deleted.", requirement.CreatedByUserId);
+        // Registrar la acción en el log
+        await _actionService.LogActionAsync(
+            requirementId,
+            "Deleted",
+            $"Requirement '{requirement.Code}' marked as deleted.",
+            requirement.CreatedByUserId
+        );
 
-            // Eliminar el requerimiento
-            await _repository.DeleteAsync(requirement);
-        }
-
-        private async Task<RequirementResponseDto> MapToResponseDtoAsync(Requirement requirement)
-        {
-            return new RequirementResponseDto
-            {
-                Id = requirement.Id,
-                Subject = requirement.Subject,
-                Code = requirement.Code,
-                Description = requirement.Description,
-                RequirementType = await _repository.GetRequirementTypeNameAsync(requirement.RequirementTypeId),
-                Category = await _repository.GetCategoryNameAsync(requirement.CategoryId),
-                Priority = requirement.PriorityId.HasValue
-                    ? await _repository.GetPriorityNameAsync(requirement.PriorityId.Value)
-                    : null,
-                Date = requirement.Date,
-                Status = requirement.Status
-            };
-        }
+        // Marcar como eliminado
+        requirement.IsDeleted = true;
+        await _repository.UpdateAsync(requirement);
     }
+
+    private async Task<RequirementResponseDto> MapToResponseDtoAsync(Requirement requirement)
+    {
+        return new RequirementResponseDto
+        {
+            Id = requirement.Id,
+            Subject = requirement.Subject,
+            Code = requirement.Code,
+            Description = requirement.Description,
+            RequirementType = await _repository.GetRequirementTypeNameAsync(requirement.RequirementTypeId),
+            Category = await _repository.GetCategoryNameAsync(requirement.CategoryId),
+            Priority = requirement.PriorityId.HasValue
+                ? await _repository.GetPriorityNameAsync(requirement.PriorityId.Value)
+                : null,
+            Date = requirement.Date,
+            Status = requirement.Status
+        };
+    }
+    public async Task<IEnumerable<RequirementResponseDto>> GetDeletedRequirementsAsync()
+    {
+        var deletedRequirements = await _repository.GetAllRequirementsEliminatedAsync();
+
+        return deletedRequirements.Select(req => new RequirementResponseDto
+        {
+            Id = req.Id,
+            Subject = req.Subject,
+            Code = req.Code,
+            Description = req.Description,
+            RequirementType = req.RequirementType.Name,
+            Category = req.Category.Name,
+            Priority = req.PriorityId.HasValue ? req.Priority.TypePriority : null,
+            Date = req.Date,
+            Status = req.Status
+        }).ToList();
+    }
+
+
+
+    public async Task RestoreRequirementAsync(int requirementId)
+    {
+        // Ignorar el filtro global para encontrar requerimientos eliminados
+        var requirement = await _repository.GetByIdIgnoringFiltersAsync(requirementId);
+        if (requirement == null || !requirement.IsDeleted)
+        {
+            throw new ArgumentException("Requirement not found or is not deleted.");
+        }
+
+        // Registrar la acción en el log
+        await _actionService.LogActionAsync(
+            requirementId,
+            "Deleted",
+            $"Requirement '{requirement.Code}' marked as restored.",
+            requirement.CreatedByUserId
+        );
+
+        // Restaurar el requerimiento
+        requirement.IsDeleted = false;
+        await _repository.UpdateAsync(requirement);
+    }
+
+}

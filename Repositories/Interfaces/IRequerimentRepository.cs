@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using trackit.server.Models;
 
 namespace trackit.server.Repositories.Interfaces
@@ -23,10 +24,18 @@ namespace trackit.server.Repositories.Interfaces
         Task<bool> ValidateRequirementRelationExistsAsync(int requirementId, int relatedRequirementId);
 
         Task<IEnumerable<Requirement>> GetAllAsync();
+
+        /*
         Task DeleteAsync(Requirement requirement);
+        */
+
         Task DeleteUserAssignmentsAsync(int requirementId);
         Task DeleteRequirementRelationsAsync(int requirementId);
         Task<List<User>> GetAssignedUsersAsync(int requirementId);
+        Task<IEnumerable<Requirement>> GetAllRequirementsEliminatedAsync();
+        Task<Requirement?> GetByIdIgnoringFiltersAsync(int id);
+      
+
 
 
     }

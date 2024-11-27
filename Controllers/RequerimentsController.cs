@@ -124,14 +124,14 @@ namespace trackit.server.Controllers
             }
         }
 
-        // Eliminar un requerimiento
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRequirement(int id)
         {
             try
             {
                 await _requirementService.DeleteRequirementAsync(id);
-                return Ok(new { Message = "Requirement deleted successfully" });
+                return Ok(new { Message = "Requirement marked as deleted successfully" });
             }
             catch (ArgumentException ex)
             {
@@ -139,9 +139,11 @@ namespace trackit.server.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "An error occurred while deleting the requirement.", Error = ex.Message });
+                return StatusCode(500, new { Message = "An error occurred while marking the requirement as deleted.", Error = ex.Message });
             }
         }
+
+
 
         // Obtener los logs de acciones de un requerimiento
         [HttpGet("{requirementId}/logs")]
