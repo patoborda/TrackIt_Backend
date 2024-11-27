@@ -12,5 +12,8 @@ namespace trackit.server.Services.Interfaces
         Task DeleteRequirementAsync(int requirementId);
         Task<IEnumerable<RequirementResponseDto>> GetDeletedRequirementsAsync();
         Task RestoreRequirementAsync(int requirementId);
+        Task<List<RequirementResponseDto>> GetAssignedRequirementsByUserIdAsync(string userId);
+        Task<List<UserProfileDto>> GetUsersAssignedToRequirementAsync(int requirementId);
+
     }
 }

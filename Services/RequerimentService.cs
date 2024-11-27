@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using trackit.server.Dtos;
 using trackit.server.Models;
 using trackit.server.Patterns.Observer;
+using trackit.server.Repositories;
 using trackit.server.Repositories.Interfaces;
 using trackit.server.Services.Interfaces;
 
@@ -295,6 +296,38 @@ public class RequirementService : IRequirementService
         // Restaurar el requerimiento
         requirement.IsDeleted = false;
         await _repository.UpdateAsync(requirement);
+    }
+    public async Task<List<RequirementResponseDto>> GetAssignedRequirementsByUserIdAsync(string userId)
+    {
+        var requirements = await _repository.GetAssignedRequirementsByUserIdAsync(userId);
+
+        return requirements.Select(r => new RequirementResponseDto
+        {
+            Id = r.Id,
+            Code = r.Code,
+            Subject = r.Subject,
+            Description = r.Description,
+            RequirementType = r.RequirementType?.Name,
+            Category = r.Category?.Name,
+            Priority = r.Priority?.TypePriority,
+            Status = r.Status,
+            Date = r.Date
+        }).ToList();
+    }
+    public async Task<List<UserProfileDto>> GetUsersAssignedToRequirementAsync(int requirementId)
+    {
+        var users = await _repository.GetUsersAssignedToRequirementAsync(requirementId);
+
+        return users.Select(u => new UserProfileDto
+        {
+            
+            FirstName = u.FirstName,
+            LastName = u.LastName,
+            Email = u.Email,
+            UserName = u.UserName,
+            Image = u.Image,
+            IsEnabled = u.IsEnabled
+        }).ToList();
     }
 
 }

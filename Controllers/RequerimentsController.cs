@@ -124,7 +124,7 @@ namespace trackit.server.Controllers
             }
         }
 
-
+        [Authorize(Roles = "Admin, Interno")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRequirement(int id)
         {
@@ -146,6 +146,7 @@ namespace trackit.server.Controllers
 
 
         // Obtener los logs de acciones de un requerimiento
+        [Authorize(Roles = "Admin, Interno")]
         [HttpGet("{requirementId}/logs")]
         public async Task<IActionResult> GetRequirementLogs(int requirementId)
         {
@@ -175,5 +176,40 @@ namespace trackit.server.Controllers
         {
             return Ok(new { Message = "This endpoint is public!" });
         }
+
+        [HttpGet("assigned")]
+        [Authorize(Roles = "Admin, Interno")]
+        public async Task<IActionResult> GetAssignedRequirements()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User ID not found" });
+
+            var requirements = await _requirementService.GetAssignedRequirementsByUserIdAsync(userId);
+            return Ok(requirements);
+        }
+        [HttpGet("{requirementId}/users-assigned")]
+        [Authorize]
+        public async Task<IActionResult> GetUsersAssignedToRequirement(int requirementId)
+        {
+            try
+            {
+                var users = await _requirementService.GetUsersAssignedToRequirementAsync(requirementId);
+
+                if (!users.Any())
+                {
+                    return NotFound(new { message = "No users assigned to this requirement." });
+                }
+
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching the assigned users.", details = ex.Message });
+            }
+        }
+
+
     }
 }

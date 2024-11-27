@@ -90,6 +90,7 @@ namespace trackit.server.Repositories
             _context.Requirements.Update(requirement);
             await _context.SaveChangesAsync();
         }
+
         /*
         public async Task DeleteAsync(Requirement requirement)
         {
@@ -97,6 +98,21 @@ namespace trackit.server.Repositories
             await _context.SaveChangesAsync();
         }
         */
+        public async Task<List<Requirement>> GetAssignedRequirementsByUserIdAsync(string userId)
+        {
+            // Aplica los Includes antes de cualquier proyección (Select)
+            return await _context.UserRequirements
+                .Where(ur => ur.UserId == userId)
+                .Include(ur => ur.Requirement)
+                    .ThenInclude(r => r.RequirementType)
+                .Include(ur => ur.Requirement)
+                    .ThenInclude(r => r.Category)
+                .Include(ur => ur.Requirement)
+                    .ThenInclude(r => r.Priority)
+                .Select(ur => ur.Requirement) // Proyecta solo los requisitos
+                .ToListAsync();
+        }
+
         public async Task DeleteUserAssignmentsAsync(int requirementId)
         {
             var userAssignments = _context.UserRequirements.Where(ur => ur.RequirementId == requirementId);
@@ -167,6 +183,12 @@ namespace trackit.server.Repositories
                 .Where(r => !r.IsDeleted && r.RestoredAt != null)
                 .ToListAsync();
         }
-
+        public async Task<List<User>> GetUsersAssignedToRequirementAsync(int requirementId)
+        {
+            return await _context.UserRequirements
+                .Where(ur => ur.RequirementId == requirementId)
+                .Select(ur => ur.User) // Proyecta a los usuarios relacionados
+                .ToListAsync();
+        }
     }
 }

@@ -28,13 +28,14 @@ namespace trackit.server.Repositories.Interfaces
         /*
         Task DeleteAsync(Requirement requirement);
         */
+        Task<List<Requirement>> GetAssignedRequirementsByUserIdAsync(string userId);
 
         Task DeleteUserAssignmentsAsync(int requirementId);
         Task DeleteRequirementRelationsAsync(int requirementId);
         Task<List<User>> GetAssignedUsersAsync(int requirementId);
         Task<IEnumerable<Requirement>> GetAllRequirementsEliminatedAsync();
         Task<Requirement?> GetByIdIgnoringFiltersAsync(int id);
-      
+        Task<List<User>> GetUsersAssignedToRequirementAsync(int requirementId);
 
 
 
