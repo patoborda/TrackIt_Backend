@@ -105,7 +105,7 @@ namespace trackit.server.Controllers
         }
 
         // Obtener todos los requerimientos (Solo Admin)
-        [Authorize(Roles = "Admin, Interno")] // Solo accesible para usuarios con el rol Admin
+       /* [Authorize(Roles = "Admin, Interno")] // Solo accesible para usuarios con el rol Admin
         [HttpGet]
         public async Task<IActionResult> GetAllRequirements()
         {
@@ -123,7 +123,22 @@ namespace trackit.server.Controllers
                 return StatusCode(500, new { Message = "An error occurred while retrieving the requirements.", Error = ex.Message });
             }
         }
-
+       */
+        
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> GetAllRequirementsWithUsers()
+        {
+            try
+            {
+                var requirementsWithUsers = await _requirementService.GetAllRequirementsWithUsersAsync();
+                return Ok(requirementsWithUsers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching the requirements.", details = ex.Message });
+            }
+        }
         [Authorize(Roles = "Admin, Interno")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRequirement(int id)
@@ -190,25 +205,25 @@ namespace trackit.server.Controllers
             return Ok(requirements);
         }
         [HttpGet("{requirementId}/users-assigned")]
-        [Authorize]
-        public async Task<IActionResult> GetUsersAssignedToRequirement(int requirementId)
+[Authorize]
+public async Task<IActionResult> GetUsersAssignedToRequirement(int requirementId)
+{
+    try
+    {
+        var users = await _requirementService.GetUsersAssignedToRequirementAsync(requirementId);
+
+        if (!users.Any())
         {
-            try
-            {
-                var users = await _requirementService.GetUsersAssignedToRequirementAsync(requirementId);
-
-                if (!users.Any())
-                {
-                    return NotFound(new { message = "No users assigned to this requirement." });
-                }
-
-                return Ok(users);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while fetching the assigned users.", details = ex.Message });
-            }
+            return NotFound(new { message = "No users assigned to this requirement." });
         }
+
+        return Ok(users);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { message = "An error occurred while fetching the assigned users.", details = ex.Message });
+    }
+}
 
 
     }

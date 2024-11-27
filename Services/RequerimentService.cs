@@ -320,7 +320,7 @@ public class RequirementService : IRequirementService
 
         return users.Select(u => new UserProfileDto
         {
-            
+
             FirstName = u.FirstName,
             LastName = u.LastName,
             Email = u.Email,
@@ -329,5 +329,37 @@ public class RequirementService : IRequirementService
             IsEnabled = u.IsEnabled
         }).ToList();
     }
+    public async Task<List<RequirementResponseWithUsersDto>> GetAllRequirementsWithUsersAsync()
+    {
+        var requirements = await _repository.GetRequirementsWithAssignedUsersAsync();
+
+        var response = requirements.Select(r => new RequirementResponseWithUsersDto
+        {
+            Requirement = new RequirementResponseDto
+            {
+                Id = r.Id,
+                Subject = r.Subject,
+                Code = r.Code,
+                Description = r.Description,
+                RequirementType = r.RequirementType?.Name,
+                Category = r.Category?.Name,
+                Priority = r.Priority?.TypePriority,
+                Status = r.Status,
+                Date = r.Date
+            },
+            AssignedUsers = r.UserRequirements.Select(ur => new UserProfileDto
+            {
+                FirstName = ur.User.FirstName,
+                LastName = ur.User.LastName,
+                Email = ur.User.Email,
+                UserName = ur.User.UserName,
+                Image = ur.User.Image ?? "https://example.com/default-image.png",
+                IsEnabled = ur.User.IsEnabled
+            }).ToList()
+        }).ToList();
+
+        return response;
+    }
+
 
 }

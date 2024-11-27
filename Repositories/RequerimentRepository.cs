@@ -190,5 +190,15 @@ namespace trackit.server.Repositories
                 .Select(ur => ur.User) // Proyecta a los usuarios relacionados
                 .ToListAsync();
         }
+        public async Task<List<Requirement>> GetRequirementsWithAssignedUsersAsync()
+        {
+            return await _context.Requirements
+                .Include(r => r.UserRequirements) // Incluir la relación con UserRequirements
+                    .ThenInclude(ur => ur.User)   // Incluir los usuarios asignados
+                .Include(r => r.RequirementType) // Incluir datos adicionales relacionados
+                .Include(r => r.Category)
+                .Include(r => r.Priority)
+                .ToListAsync();
+        }
     }
 }

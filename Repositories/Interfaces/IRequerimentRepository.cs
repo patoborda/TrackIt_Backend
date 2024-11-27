@@ -37,6 +37,7 @@ namespace trackit.server.Repositories.Interfaces
         Task<Requirement?> GetByIdIgnoringFiltersAsync(int id);
         Task<List<User>> GetUsersAssignedToRequirementAsync(int requirementId);
 
+        Task<List<Requirement>> GetRequirementsWithAssignedUsersAsync();
 
 
     }
