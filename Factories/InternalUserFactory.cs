@@ -24,7 +24,7 @@ namespace trackit.server.Factories.UserFactories
                 Email = email,
                 FirstName = firstName,
                 LastName = lastName,
-                Image = "https://res.cloudinary.com/dpzhs3vyi/image/upload/v1732408233/default-image_zcgh1j.png",
+                Image = "https://res.cloudinary.com/dvv74bwlp/image/upload/v1732681197/default-image_l5fzcd.png",
                 IsEnabled = false // Opcional: Inicializa el estado del usuario
             };
 

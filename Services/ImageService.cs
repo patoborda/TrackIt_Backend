@@ -26,7 +26,7 @@ namespace trackit.server.Services
             var uploadParams = new ImageUploadParams()
             {
                 File = new FileDescription(file.FileName, file.OpenReadStream()),
-                Folder = "antigal-photos"
+                Folder = "trackit"
             };
 
             var uploadResult = await _cloudinary.UploadAsync(uploadParams);
