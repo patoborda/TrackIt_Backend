@@ -15,6 +15,7 @@ namespace trackit.server.Controllers
             _service = service;
         }
 
+        // GET api/Category
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -22,15 +23,16 @@ namespace trackit.server.Controllers
             return Ok(categories);
         }
 
+        // GET api/Category/5
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
             var category = await _service.GetByIdAsync(id);
             if (category == null) return NotFound();
-
             return Ok(category);
         }
 
+        // POST api/Category
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CategoryDto dto)
         {
@@ -38,6 +40,7 @@ namespace trackit.server.Controllers
             return CreatedAtAction(nameof(GetById), new { id = createdCategory.Id }, createdCategory);
         }
 
+        // PUT api/Category/5
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] CategoryUpdateDto dto)
         {
@@ -52,7 +55,7 @@ namespace trackit.server.Controllers
             }
         }
 
-
+        // DELETE api/Category/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -67,5 +70,14 @@ namespace trackit.server.Controllers
             }
         }
 
+        // NUEVO ENDPOINT: Obtiene categorías por RequirementTypeId
+        // GET api/Category/by-requirement-type/3
+        [HttpGet("by-requirement-type/{requirementTypeId}")]
+        public async Task<IActionResult> GetByRequirementType(int requirementTypeId)
+        {
+            var categories = await _service.GetByRequirementTypeAsync(requirementTypeId);
+            // Puedes validar si la lista está vacía y devolver NotFound, en caso necesario
+            return Ok(categories);
+        }
     }
 }

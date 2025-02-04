@@ -73,10 +73,22 @@ namespace trackit.server.Services
             };
         }
 
-
         public async Task<bool> DeleteAsync(int id)
         {
             return await _repository.DeleteAsync(id);
+        }
+
+        // MÉTODO NUEVO: Retorna las categorías que pertenecen al RequirementType indicado
+        public async Task<IEnumerable<CategoryDto>> GetByRequirementTypeAsync(int requirementTypeId)
+        {
+            var categories = await _repository.GetByRequirementTypeAsync(requirementTypeId);
+
+            return categories.Select(c => new CategoryDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                RequirementTypeId = c.RequirementTypeId
+            });
         }
     }
 }

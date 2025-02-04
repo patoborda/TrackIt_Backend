@@ -16,7 +16,9 @@ namespace trackit.server.Repositories
 
         public async Task<IEnumerable<Category>> GetAllAsync()
         {
-            return await _context.Categories.Include(c => c.RequirementType).ToListAsync();
+            return await _context.Categories
+                .Include(c => c.RequirementType)
+                .ToListAsync();
         }
 
         public async Task<Category?> GetByIdAsync(int id)
@@ -48,6 +50,15 @@ namespace trackit.server.Repositories
             _context.Categories.Remove(category);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        // MÉTODO NUEVO: Obtiene todas las categorías que pertenecen a un RequirementTypeId
+        public async Task<IEnumerable<Category>> GetByRequirementTypeAsync(int requirementTypeId)
+        {
+            return await _context.Categories
+                .Where(c => c.RequirementTypeId == requirementTypeId)
+                .Include(c => c.RequirementType)
+                .ToListAsync();
         }
     }
 }

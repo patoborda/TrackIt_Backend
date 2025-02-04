@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using trackit.server.Dtos;
 using trackit.server.Services.Interfaces;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace trackit.server.Controllers
 {
@@ -22,28 +23,22 @@ namespace trackit.server.Controllers
         }
 
         // Crear un requerimiento
-        [HttpPost]
+        [HttpPost("createRequeriment")]
         public async Task<IActionResult> CreateRequirement([FromBody] RequirementCreateDto requirementDto)
         {
-            if (requirementDto == null)
-                return BadRequest(new { Message = "Invalid request payload." });
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { Message = "User is not authenticated." });
-
             try
             {
+                Console.WriteLine("El número es: " + requirementDto);
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { Message = "User is not authenticated." });
+
                 var response = await _requirementService.CreateRequirementAsync(requirementDto, userId);
                 return CreatedAtAction(nameof(GetRequirementById), new { id = response.Id }, new
                 {
                     Message = "Requirement created successfully",
                     Data = response
                 });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
             }
             catch (Exception ex)
             {

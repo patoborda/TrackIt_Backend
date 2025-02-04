@@ -9,5 +9,8 @@ namespace trackit.server.Repositories.Interfaces
         Task<Category> AddAsync(Category category);
         Task<Category> UpdateAsync(Category category);
         Task<bool> DeleteAsync(int id);
+
+        // Nuevo método
+        Task<IEnumerable<Category>> GetByRequirementTypeAsync(int requirementTypeId);
     }
 }
