@@ -45,7 +45,7 @@ public class RequirementService : IRequirementService
             var requirementCode = $"REH-{currentYear}-{nextSequentialNumber:00000000}";
 
             // Determinar estado inicial
-            var status = requirementDto.AssignedUsers != null && requirementDto.AssignedUsers.Any() ? "Assigned" : "Open";
+            var status = requirementDto.AssignedUsers != null && requirementDto.AssignedUsers.Any() ? "Asignado" : "Abierto";
 
             // Crear requerimiento
             var newRequirement = new Requirement
@@ -312,7 +312,7 @@ public class RequirementService : IRequirementService
 
         return users.Select(u => new UserProfileDto
         {
-
+            Id = u.Id,
             FirstName = u.FirstName,
             LastName = u.LastName,
             Email = u.Email,
@@ -341,6 +341,7 @@ public class RequirementService : IRequirementService
             },
             AssignedUsers = r.UserRequirements.Select(ur => new UserProfileDto
             {
+                Id = ur.User.Id,
                 FirstName = ur.User.FirstName,
                 LastName = ur.User.LastName,
                 Email = ur.User.Email,
@@ -353,5 +354,24 @@ public class RequirementService : IRequirementService
         return response;
     }
 
+
+        // Método para obtener los requerimientos creados por un usuario
+        public async Task<List<RequirementResponseDto>> GetRequirementsCreatedByUserIdAsync(string userId)
+    {
+        var requirements = await _repository.GetRequirementsCreatedByUserIdAsync(userId);
+
+        return requirements.Select(r => new RequirementResponseDto
+        {
+            Id = r.Id,
+            Subject = r.Subject,
+            Code = r.Code,
+            Description = r.Description,
+            RequirementType = r.RequirementType?.Name,
+            Category = r.Category?.Name,
+            Priority = r.Priority?.TypePriority,
+            Status = r.Status,
+            Date = r.Date
+        }).ToList();
+    }
 
 }

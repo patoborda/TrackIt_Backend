@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("trackit.server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+72b44d0aa2b51c0a681a20a47892f1227a644eed")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+13562587d5c4b920dd06ec77e75e3b47b2faeb9f")]
 [assembly: System.Reflection.AssemblyProductAttribute("trackit.server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("trackit.server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

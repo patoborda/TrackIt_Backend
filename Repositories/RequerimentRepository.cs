@@ -200,5 +200,17 @@ namespace trackit.server.Repositories
                 .Include(r => r.Priority)
                 .ToListAsync();
         }
+
+        // Implementación para obtener los requerimientos creados por un usuario
+        public async Task<List<Requirement>> GetRequirementsCreatedByUserIdAsync(string userId)
+        {
+            return await _context.Requirements
+                .Where(r => r.CreatedByUserId == userId && !r.IsDeleted) // Filtrar por el creador y excluir los eliminados
+                .Include(r => r.RequirementType)
+                .Include(r => r.Category)
+                .Include(r => r.Priority)
+                .ToListAsync();
+        }
+
     }
 }

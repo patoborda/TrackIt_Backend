@@ -15,6 +15,6 @@ namespace trackit.server.Services.Interfaces
         Task<List<RequirementResponseDto>> GetAssignedRequirementsByUserIdAsync(string userId);
         Task<List<UserProfileDto>> GetUsersAssignedToRequirementAsync(int requirementId);
         Task<List<RequirementResponseWithUsersDto>> GetAllRequirementsWithUsersAsync();
-
+        Task<List<RequirementCreateDto>> GetRequirementsCreatedByUserIdAsync(string userId);
     }
 }

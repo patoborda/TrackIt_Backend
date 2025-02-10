@@ -239,6 +239,7 @@ namespace trackit.server.Services
             {
                 return new AdminUserProfileDto
                 {
+                    Id = user.Id,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     Email = user.Email,
@@ -253,6 +254,7 @@ namespace trackit.server.Services
             {
                 return new InternalUserProfileDto
                 {
+                    Id = user.Id,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     Email = user.Email,
@@ -268,6 +270,7 @@ namespace trackit.server.Services
             {
                 return new ExternalUserProfileDto
                 {
+                    Id = user.Id,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     Email = user.Email,
@@ -284,6 +287,7 @@ namespace trackit.server.Services
             // Si no tiene roles específicos, devolver datos básicos
             return new UserProfileDto
             {
+                Id = user.Id,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email,
@@ -319,6 +323,7 @@ namespace trackit.server.Services
             // Mapear a DTO de usuarios externos
             var userDtos = externalUsers.Select(u => new ExternalUserProfileDto
             {
+                Id = u.Id,
                 FirstName = u.FirstName,
                 LastName = u.LastName,
                 Email = u.Email,
@@ -341,7 +346,8 @@ namespace trackit.server.Services
 
             // Mapear a DTO de usuarios internos
             var userDtos = internalUsers.Select(u => new InternalUserProfileDto
-            {
+            {   
+                Id = u.Id,
                 FirstName = u.FirstName,
                 LastName = u.LastName,
                 Email = u.Email,

@@ -1,4 +1,6 @@
-﻿namespace trackit.server.Dtos
+﻿using trackit.server.Models;
+
+namespace trackit.server.Dtos
 {
     public class RequirementResponseDto
     {

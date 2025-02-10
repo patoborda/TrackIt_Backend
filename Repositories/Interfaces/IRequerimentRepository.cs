@@ -39,6 +39,6 @@ namespace trackit.server.Repositories.Interfaces
 
         Task<List<Requirement>> GetRequirementsWithAssignedUsersAsync();
 
-
+        Task<List<Requirement>> GetRequirementsCreatedByUserIdAsync(string userId);
     }
 }

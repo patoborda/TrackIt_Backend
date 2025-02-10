@@ -221,5 +221,25 @@ namespace trackit.server.Controllers
             }
 
 
+        // Endpoint para obtener requerimientos por el ID del usuario creador
+        [HttpGet("created-by/{userId}")]
+        public async Task<IActionResult> GetRequirementsCreatedByUserId(string userId)
+        {
+            try
+            {
+                var requirements = await _requirementService.GetRequirementsCreatedByUserIdAsync(userId);
+                return Ok(new
+                {
+                    Message = "Requirements retrieved successfully",
+                    Data = requirements
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving the requirements.", Error = ex.Message });
+            }
+        }
+
+
     }
 }
