@@ -248,7 +248,8 @@ public class RequirementService : IRequirementService
                 ? await _repository.GetPriorityNameAsync(requirement.PriorityId.Value)
                 : null,
             Date = requirement.Date,
-            Status = requirement.Status
+            Status = requirement.Status,
+            CreatedByUserId = requirement.CreatedByUserId
         };
     }
     public async Task<IEnumerable<RequirementResponseDto>> GetDeletedRequirementsAsync()
@@ -370,7 +371,9 @@ public class RequirementService : IRequirementService
             Category = r.Category?.Name,
             Priority = r.Priority?.TypePriority,
             Status = r.Status,
-            Date = r.Date
+            Date = r.Date,
+            CreatedByUserId= r.CreatedByUserId
+
         }).ToList();
     }
 
