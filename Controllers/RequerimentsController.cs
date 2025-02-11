@@ -101,7 +101,7 @@ namespace trackit.server.Controllers
 
         // Obtener todos los requerimientos (Solo Admin)
         [Authorize(Roles = "Admin, Interno")] // Solo accesible para usuarios con el rol Admin
-        [HttpGet]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAllRequirements()
         {
             try
@@ -120,7 +120,7 @@ namespace trackit.server.Controllers
         }
         
         [Authorize]
-        [HttpGet]
+        [HttpGet("allWithUsers")]
         public async Task<IActionResult> GetAllRequirementsWithUsers()
         {
             try

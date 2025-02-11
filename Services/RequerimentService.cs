@@ -356,25 +356,38 @@ public class RequirementService : IRequirementService
     }
 
 
-        // Método para obtener los requerimientos creados por un usuario
-        public async Task<List<RequirementResponseDto>> GetRequirementsCreatedByUserIdAsync(string userId)
+    // Método para obtener los requerimientos creados por un usuario
+    public async Task<List<RequirementResponseDto>> GetRequirementsCreatedByUserIdAsync(string userId)
     {
+        // Obtén los requerimientos creados por el usuario
         var requirements = await _repository.GetRequirementsCreatedByUserIdAsync(userId);
 
-        return requirements.Select(r => new RequirementResponseDto
-        {
-            Id = r.Id,
-            Subject = r.Subject,
-            Code = r.Code,
-            Description = r.Description,
-            RequirementType = r.RequirementType?.Name,
-            Category = r.Category?.Name,
-            Priority = r.Priority?.TypePriority,
-            Status = r.Status,
-            Date = r.Date,
-            CreatedByUserId= r.CreatedByUserId
+        // Creamos una lista de tareas que se ejecutarán de manera secuencial
+        var result = new List<RequirementResponseDto>();
 
-        }).ToList();
+        foreach (var requirement in requirements)
+        {
+            // Para cada requerimiento, obtenemos los usuarios asignados de manera secuencial
+            var assignedUsers = await GetUsersAssignedToRequirementAsync(requirement.Id);
+
+            // Mapear el requerimiento a un DTO
+            result.Add(new RequirementResponseDto
+            {
+                Id = requirement.Id,
+                Subject = requirement.Subject,
+                Code = requirement.Code,
+                Description = requirement.Description,
+                RequirementType = requirement.RequirementType?.Name,
+                Category = requirement.Category?.Name,
+                Priority = requirement.Priority?.TypePriority,
+                Status = requirement.Status,
+                Date = requirement.Date,
+                CreatedByUserId = requirement.CreatedByUserId,
+                AssignedUsers = assignedUsers // Lista de usuarios asignados
+            });
+        }
+
+        return result; // Retornar los resultados después de que todas las tareas se hayan completado
     }
 
 }
