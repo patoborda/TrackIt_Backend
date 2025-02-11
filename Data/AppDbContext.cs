@@ -19,7 +19,7 @@ namespace trackit.server.Data
         public DbSet<AdminUser> AdminUsers { get; set; }
         public DbSet<UserRequirement> UserRequirements { get; set; }
         public DbSet<Comment> Comments { get; set; }
-        public DbSet<AttachedFile> AttachedFiles { get; set; }
+        public DbSet<Attachment> Attachments { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserNotification> UserNotifications { get; set; }
 
@@ -106,7 +106,7 @@ namespace trackit.server.Data
                 .WithMany()
                 .HasForeignKey(r => r.PriorityId)
                 .OnDelete(DeleteBehavior.SetNull);
-
+            /*
             // Configuración de la relación Comment -> Requirement
             modelBuilder.Entity<Comment>()
                 .HasOne(c => c.Requirement)
@@ -127,7 +127,7 @@ namespace trackit.server.Data
                 .HasMany(c => c.Files)
                 .WithOne()
                 .OnDelete(DeleteBehavior.Cascade);
-
+            */
             // Configuración de la relación muchos-a-muchos User -> Notification
             modelBuilder.Entity<UserNotification>()
                 .HasKey(un => new { un.UserId, un.NotificationId });
@@ -143,6 +143,11 @@ namespace trackit.server.Data
                 .WithMany(n => n.UserNotifications)
                 .HasForeignKey(un => un.NotificationId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Comment>()
+                .HasMany(c => c.Attachments) // Usamos HasMany() en lugar de SelectMany()
+                .WithOne(a => a.Comment)
+                .HasForeignKey(a => a.CommentId);
 
             // Seed Data para RequirementType
             modelBuilder.Entity<RequirementType>().HasData(

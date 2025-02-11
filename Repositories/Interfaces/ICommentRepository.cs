@@ -1,4 +1,4 @@
-﻿using trackit.server.Models;
+﻿/*using trackit.server.Models;
 
 namespace trackit.server.Repositories
 {
@@ -11,3 +11,4 @@ namespace trackit.server.Repositories
         Task DeleteCommentAsync(int id);
     }
 }
+*/

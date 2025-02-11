@@ -1,4 +1,4 @@
-﻿using trackit.server.Models;
+﻿/*using trackit.server.Models;
 using trackit.server.Repositories;
 using trackit.server.Services;
 using trackit.server.Dtos;
@@ -65,3 +65,4 @@ public class CommentService : ICommentService
         await _repository.DeleteCommentAsync(id);
     }
 }
+*/

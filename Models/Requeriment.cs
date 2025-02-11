@@ -7,7 +7,7 @@ public class Requirement
     public string Code { get; set; }
     public string Description { get; set; }
 
-    public bool IsDeleted { get; set; } = false; // Nuevo campo para eliminación lógica
+    public bool IsDeleted { get; set; } = false; // Eliminación lógica
     public DateTime? RestoredAt { get; set; } // Fecha de restauración
 
     public int RequirementTypeId { get; set; }
@@ -25,8 +25,12 @@ public class Requirement
     public string CreatedByUserId { get; set; } // Usuario creador
     public User CreatedByUser { get; set; } // Relación con el usuario
 
-    // Relación con Comment
+    // Relación con comentarios
     public List<Comment> Comments { get; set; } = new();
+
+    // Relación con archivos adjuntos (de los requerimientos)
+    public ICollection<Attachment> Attachments { get; set; }
+
     public ICollection<RequirementRelation> RelatedRequirements { get; set; } = new List<RequirementRelation>();
     public ICollection<UserRequirement> UserRequirements { get; set; } = new List<UserRequirement>();
 }
