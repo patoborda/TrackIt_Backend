@@ -1,9 +1,11 @@
-﻿using MailKit.Net.Smtp;
+﻿using HandlebarsDotNet;
 using MimeKit;
-using Microsoft.Extensions.Configuration;
+using MailKit.Net.Smtp;
+using System.IO;
 using System.Threading.Tasks;
 using trackit.server.Services.Interfaces;
-using trackit.server.Exceptions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MailKit.Security;
 
 namespace trackit.server.Services
@@ -18,70 +20,59 @@ namespace trackit.server.Services
             _configuration = configuration;
             _logger = logger;
         }
-        public async Task SendEmailAsync(string to, string subject, string message)
+
+        // Implementación correcta del método SendEmailAsync
+        public async Task SendEmailAsync(string to, string subject, string templateName, object templateData)
         {
             try
             {
+                // Cargar la plantilla .html desde la carpeta Templates
+                string templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates", $"{templateName}.html");
+      
+
+                if (!File.Exists(templatePath))
+                {
+                    throw new FileNotFoundException($"Template '{templateName}.html' not found.");
+                }
+
+                // Leer la plantilla
+                string templateSource = await File.ReadAllTextAsync(templatePath);
+
+                // Compilar la plantilla con Handlebars
+                var template = Handlebars.Compile(templateSource);
+
+                // Aplicar los datos dinámicos a la plantilla
+                var body = template(templateData);
+
+                // Crear el mensaje de correo electrónico
                 var emailMessage = new MimeMessage();
-
-                // Remitente
-                emailMessage.From.Add(new MailboxAddress("Your App", _configuration["Email:FromAddress"]));
-
-                // Destinatario
-                emailMessage.To.Add(new MailboxAddress(string.Empty, to));
-
+                emailMessage.From.Add(new MailboxAddress("TrackIt", _configuration["Email:FromAddress"]));
+                emailMessage.To.Add(new MailboxAddress("", to));
                 emailMessage.Subject = subject;
 
                 var bodyBuilder = new BodyBuilder
                 {
-                    HtmlBody = message
+                    HtmlBody = body
                 };
+
                 emailMessage.Body = bodyBuilder.ToMessageBody();
 
+                // Enviar el correo electrónico a través de SMTP
                 using (var smtpClient = new SmtpClient())
                 {
                     // Intenta convertir el puerto SMTP de la configuración a un número entero
-                    if (int.TryParse(_configuration["Email:SmtpPort"], out int smtpPort))
-                    {
-                        // Conectar al servidor SMTP con STARTTLS usando el puerto validado
-                        await smtpClient.ConnectAsync(_configuration["Email:SmtpHost"], smtpPort, SecureSocketOptions.StartTls);
-
-                        // Autenticación
-                        await smtpClient.AuthenticateAsync(_configuration["Email:FromAddress"], _configuration["Email:FromPassword"]);
-
-                        // Enviar el mensaje
-                        await smtpClient.SendAsync(emailMessage);
-
-                        // Desconectar
-                        await smtpClient.DisconnectAsync(true);
-                    }
-                    else
-                    {
-                        // Manejo de error si el puerto SMTP no se puede convertir a entero
-                        throw new InvalidOperationException("El valor de SmtpPort no es un número válido.");
-                    }
+                    int smtpPort = int.Parse(_configuration["Email:SmtpPort"]);
+                    await smtpClient.ConnectAsync(_configuration["Email:SmtpHost"], smtpPort, SecureSocketOptions.StartTls);
+                    await smtpClient.AuthenticateAsync(_configuration["Email:FromAddress"], _configuration["Email:FromPassword"]);
+                    await smtpClient.SendAsync(emailMessage);
+                    await smtpClient.DisconnectAsync(true);
                 }
-
-            }
-            catch (SmtpCommandException smtpEx)
-            {
-                // Esto captura errores específicos de los comandos SMTP
-                _logger.LogError(smtpEx, "SMTP Command Error while sending email to {To}", to);
-                throw new EmailSendException("SMTP Command Error: " + smtpEx.Message);
-            }
-            catch (SmtpProtocolException smtpProtocolEx)
-            {
-                // Errores de protocolo SMTP
-                _logger.LogError(smtpProtocolEx, "SMTP Protocol Error while sending email to {To}", to);
-                throw new EmailSendException("SMTP Protocol Error: " + smtpProtocolEx.Message);
             }
             catch (Exception ex)
             {
-                // Captura cualquier otra excepción general
-                _logger.LogError(ex, "Unexpected error while sending email to {To}", to);
-                throw new EmailSendException("Unexpected error while sending email: " + ex.Message);
+                _logger.LogError(ex, "Error sending email to {To}", to);
+                throw new Exception("Error sending email", ex);
             }
         }
-
     }
 }

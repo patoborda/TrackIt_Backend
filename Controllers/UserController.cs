@@ -20,15 +20,18 @@ namespace trackit.server.Controllers
         private readonly IAuthService _authService;
         private readonly UserManager<User> _userManager;
         private readonly IEmailService _emailService;
-        public UserController(IUserService userService, IAuthService authService, UserManager<User> userManager, IEmailService emailService)
+        private readonly IConfiguration _configuration;  // Agregar configuración
+
+        public UserController(IUserService userService, IAuthService authService, UserManager<User> userManager, IEmailService emailService, IConfiguration configuration)
         {
             _userService = userService;
             _authService = authService;
             _userManager = userManager;
             _emailService = emailService;
+            _configuration = configuration;
         }
 
-        /// Endpoint para registrar un nuevo usuario interno.
+        // Endpoint para registrar un nuevo usuario interno
         [HttpPost("register-internal")]
         public async Task<IActionResult> RegisterInternal([FromBody] RegisterInternalUserDto registerInternalUserDto)
         {
@@ -40,6 +43,7 @@ namespace trackit.server.Controllers
                 var result = await _userService.RegisterInternalUserAsync(registerInternalUserDto);
                 if (result)
                 {
+                    // El UserService ya envía el correo de confirmación internamente
                     return Ok(new { message = "User registered successfully! Please check your email to confirm your account." });
                 }
                 return BadRequest(new { message = "Failed to register user." });
@@ -54,8 +58,7 @@ namespace trackit.server.Controllers
             }
         }
 
-
-        /// Endpoint para registrar un nuevo usuario externo.
+        // Endpoint para registrar un nuevo usuario externo
         [HttpPost("register-external")]
         public async Task<IActionResult> RegisterExternal([FromBody] RegisterExternalUserDto registerExternalUserDto)
         {
@@ -67,6 +70,7 @@ namespace trackit.server.Controllers
                 var result = await _userService.RegisterExternalUserAsync(registerExternalUserDto);
                 if (result)
                 {
+                    // El UserService ya envía el correo de confirmación internamente
                     return Ok(new { message = "User registered successfully! Please check your email to confirm your account." });
                 }
                 return BadRequest(new { message = "Failed to register user." });
@@ -126,6 +130,21 @@ namespace trackit.server.Controllers
             try
             {
                 var result = await _userService.SendPasswordResetLinkAsync(forgotPasswordDto.Email, forgotPasswordDto.ClientUri);
+                var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
+
+                if (user != null)
+                {
+                    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                    var resetUrl = $"{_configuration["AppUrl"]}/reset-password?token={Uri.EscapeDataString(token)}";
+
+                    // Enviar el correo de restablecimiento
+                    string subject = "Reset Your Password";
+                    string templateName = "password-reset"; // Nombre de la plantilla
+                    var templateData = new { userName = user.UserName, resetUrl = resetUrl };
+
+                    await _emailService.SendEmailAsync(user.Email, subject, templateName, templateData);
+                }
+
                 return Ok(new { message = "Password reset link sent successfully" });
             }
             catch (UserNotFoundException)
@@ -134,7 +153,6 @@ namespace trackit.server.Controllers
             }
             catch (EmailSendException ex)
             {
-                // Puedes loguear ex.Message aquí si lo deseas
                 return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
             }
             catch (Exception)
@@ -142,8 +160,6 @@ namespace trackit.server.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while sending the password reset link" });
             }
         }
-
-
 
         // Endpoint para restablecer la contraseña
         [HttpPost("reset-password")]
@@ -171,8 +187,7 @@ namespace trackit.server.Controllers
             }
         }
 
-
-
+        // Endpoint para obtener el perfil del usuario
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
@@ -207,7 +222,7 @@ namespace trackit.server.Controllers
                 return BadRequest("Invalid email confirmation request.");
             }
 
-            // Decodificar el token (importante si está codificado en el enlace)
+            // Descodificar el token (si está codificado con %2B, %2F, etc.)
             token = Uri.UnescapeDataString(token);
 
             var user = await _userManager.FindByIdAsync(userId);
@@ -216,37 +231,17 @@ namespace trackit.server.Controllers
                 return BadRequest("User not found.");
             }
 
-            Console.WriteLine($"User found: {user.Email}");
-            Console.WriteLine($"Email confirmed: {user.EmailConfirmed}");
-
             var result = await _userManager.ConfirmEmailAsync(user, token);
             if (result.Succeeded)
             {
-                Console.WriteLine("Email confirmed successfully.");
+                // Aquí simplemente retornamos Ok SIN enviar correo adicional
                 return Ok("Email confirmed successfully.");
             }
             else
             {
-                Console.WriteLine($"Error confirming email: {result.Errors.FirstOrDefault()?.Description}");
-                return BadRequest("Error confirming email.");
-            }
-        }   
-
-        [HttpGet("test-email")]
-        public async Task<IActionResult> TestEmail()
-        {
-            string to = "trackit900@gmail.com";  // Correo de prueba
-            string subject = "Test Email";
-            string message = "This is a test email.";
-
-            try
-            {
-                await _emailService.SendEmailAsync(to, subject, message);
-                return Ok("Email sent successfully.");
-            }
-            catch (EmailSendException ex)
-            {
-                return StatusCode(500, $"Error sending email: {ex.Message}");
+                // Para ver el detalle del error Identity
+                var errorDetails = string.Join("; ", result.Errors.Select(e => e.Description));
+                return BadRequest($"Error confirming email. Details: {errorDetails}");
             }
         }
 
@@ -264,7 +259,6 @@ namespace trackit.server.Controllers
                 return StatusCode(500, new { message = ex.Message });
             }
         }
-
 
         // Endpoint para obtener un usuario por su ID
         [HttpGet("{id}")]
@@ -284,6 +278,5 @@ namespace trackit.server.Controllers
                 return StatusCode(500, new { message = ex.Message });
             }
         }
-
     }
 }

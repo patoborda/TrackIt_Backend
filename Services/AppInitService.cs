@@ -43,6 +43,7 @@ public class AppInitializationService
                 FirstName = "Admin",
                 LastName = "User",
                 IsEnabled = true, // El admin siempre está habilitado
+                EmailConfirmed = true,
                 Image = "https://res.cloudinary.com/dpzhs3vyi/image/upload/v1732408233/default-image_zcgh1j.png"
             };
 

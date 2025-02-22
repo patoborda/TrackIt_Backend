@@ -15,7 +15,11 @@ namespace trackit.server.Patterns.Observer
         {
             if (data is EmailNotificationData emailData)
             {
-                await _emailService.SendEmailAsync(emailData.Email, "Notification", $"{message}: {emailData.Content}");
+                // Crear el templateData para pasarlo al método SendEmailAsync
+                var templateData = new { Content = emailData.Content };
+
+                // Pasar templateData al método SendEmailAsync
+                await _emailService.SendEmailAsync(emailData.Email, "Notification", $"{message}: {emailData.Content}", templateData);
             }
             else
             {
@@ -23,7 +27,6 @@ namespace trackit.server.Patterns.Observer
             }
         }
     }
-
 
     public class EmailNotificationData
     {

@@ -78,6 +78,19 @@
           }
         }
       },
+      "Handlebars.Net/2.1.6": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/Handlebars.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/Handlebars.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Humanizer.Core/2.14.1": {
         "type": "package",
         "compile": {
@@ -3187,6 +3200,29 @@
         "lib/netstandard1.3/CloudinaryDotNet.xml",
         "lib/netstandard2.0/CloudinaryDotNet.dll",
         "lib/netstandard2.0/CloudinaryDotNet.xml"
+      ]
+    },
+    "Handlebars.Net/2.1.6": {
+      "sha512": "WsYWCEXsIM6hEOSOSRHtIYLjC8BnbT5MVmqhNKRqUI7qiv0t8x3nJiBTEv0ZZfvUAMAFnadGIzSsS/U2anVG1Q==",
+      "type": "package",
+      "path": "handlebars.net/2.1.6",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "handlebars.net.2.1.6.nupkg.sha512",
+        "handlebars.net.nuspec",
+        "hbnet-icon.png",
+        "lib/net451/Handlebars.dll",
+        "lib/net451/Handlebars.xml",
+        "lib/net6.0/Handlebars.dll",
+        "lib/net6.0/Handlebars.xml",
+        "lib/netstandard1.3/Handlebars.dll",
+        "lib/netstandard1.3/Handlebars.xml",
+        "lib/netstandard2.0/Handlebars.dll",
+        "lib/netstandard2.0/Handlebars.xml",
+        "lib/netstandard2.1/Handlebars.dll",
+        "lib/netstandard2.1/Handlebars.xml"
       ]
     },
     "Humanizer.Core/2.14.1": {
@@ -9173,6 +9209,7 @@
   "projectFileDependencyGroups": {
     "net8.0": [
       "CloudinaryDotNet >= 1.26.2",
+      "Handlebars.Net >= 2.1.6",
       "MailKit >= 4.8.0",
       "Microsoft.AspNetCore.Authentication.JwtBearer >= 8.0.11",
       "Microsoft.AspNetCore.Identity.EntityFrameworkCore >= 8.0.11",
@@ -9231,6 +9268,10 @@
           "CloudinaryDotNet": {
             "target": "Package",
             "version": "[1.26.2, )"
+          },
+          "Handlebars.Net": {
+            "target": "Package",
+            "version": "[2.1.6, )"
           },
           "MailKit": {
             "target": "Package",
