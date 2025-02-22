@@ -1,21 +1,25 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
 
-public class CommentHub : Hub
+namespace trackit.server.Hubs
 {
-    public async Task SendComment(int requirementId, string user, string message)
-    {
-        // Enviar el comentario a todos los clientes en el grupo del requerimiento
-        await Clients.Group(requirementId.ToString()).SendAsync("ReceiveComment", user, message);
-    }
 
-    public async Task JoinRequirementGroup(int requirementId)
+    public class CommentHub : Hub
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, requirementId.ToString());
-    }
+        public async Task SendComment(int requirementId, string user, string message)
+        {
+            // Enviar el comentario a todos los clientes en el grupo del requerimiento
+            await Clients.Group(requirementId.ToString()).SendAsync("ReceiveComment", user, message);
+        }
 
-    public async Task LeaveRequirementGroup(int requirementId)
-    {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, requirementId.ToString());
+        public async Task JoinRequirementGroup(int requirementId)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, requirementId.ToString());
+        }
+
+        public async Task LeaveRequirementGroup(int requirementId)
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, requirementId.ToString());
+        }
     }
 }

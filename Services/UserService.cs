@@ -7,6 +7,7 @@ using trackit.server.Services.Interfaces;
 using trackit.server.Factories.UserFactories;
 using static trackit.server.Dtos.RegisterUserDto;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Win32;
 
 namespace trackit.server.Services
 {
@@ -41,15 +42,15 @@ namespace trackit.server.Services
             _imageService = imageService;
         }
 
+        
+        // ---------------------------------------------------------
         public async Task<bool> RegisterInternalUserAsync(RegisterInternalUserDto registerInternalUserDto)
         {
             try
             {
-                // Verificación de contraseñas
                 if (registerInternalUserDto.Password != registerInternalUserDto.ConfirmPassword)
                     throw new PasswordMismatchException();
 
-                // Usar la fábrica para crear el usuario interno
                 var internalUser = _internalUserFactory.CreateUser(
                     registerInternalUserDto.Email,
                     registerInternalUserDto.FirstName,
@@ -59,26 +60,25 @@ namespace trackit.server.Services
                     registerInternalUserDto.Departamento
                 );
 
-                // Verificar si el rol "Interno" existe
                 var roleExists = await _userRepository.RoleExistsAsync("Interno");
                 if (!roleExists)
                 {
-                    // Si el rol no existe, eliminar el usuario creado
                     await _userRepository.DeleteUserAsync(internalUser);
                     throw new Exception("Role 'Interno' does not exist. User creation has been rolled back.");
                 }
 
-                // Normalizar el clientUri para evitar barras diagonales al final
-                var normalizedClientUri = registerInternalUserDto.ClientUri.TrimEnd('/');
-
-                // Generar el token de confirmación de email
+                // Generar token de confirmación
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(internalUser);
-                var confirmLink = $"{registerInternalUserDto.ClientUri}?userId={internalUser.Id}&token={Uri.EscapeDataString(token)}";
 
-                // Enviar correo de confirmación
-                var subject = "Email Confirmation";
-                var body = $"<p>To confirm your email address, click the link below:</p><p><a href='{confirmLink}'>Confirm Email</a></p>";
-                await _emailService.SendEmailAsync(internalUser.Email, subject, body);
+                // Enviar el correo de confirmación
+                // AHORA PASAMOS TAMBIÉN internalUser.UserName COMO 5° PARÁMETRO
+                await SendConfirmationEmailAsync(
+                    registerInternalUserDto.Email,
+                    registerInternalUserDto.ClientUri,
+                    internalUser.Id,
+                    token,
+                    internalUser.UserName
+                );
 
                 return true;
             }
@@ -88,20 +88,21 @@ namespace trackit.server.Services
             }
             catch (Exception ex)
             {
-                // Loguear el error completo (incluyendo el InnerException si existe)
                 throw new Exception("An error occurred while registering the internal user. Details: " + ex.Message, ex);
             }
         }
 
+
+        // ---------------------------------------------------------
+        // 2) Register External User
+        // ---------------------------------------------------------
         public async Task<bool> RegisterExternalUserAsync(RegisterExternalUserDto registerExternalUserDto)
         {
             try
             {
-                // Verificación de contraseñas
                 if (registerExternalUserDto.Password != registerExternalUserDto.ConfirmPassword)
                     throw new PasswordMismatchException();
 
-                // Usar la fábrica para crear el usuario externo
                 var externalUser = _externalUserFactory.CreateUser(
                     registerExternalUserDto.Email,
                     registerExternalUserDto.FirstName,
@@ -112,25 +113,25 @@ namespace trackit.server.Services
                     registerExternalUserDto.Descripcion
                 );
 
-                // Verificar si el rol "Externo" existe
                 var roleExists = await _userRepository.RoleExistsAsync("Externo");
                 if (!roleExists)
                 {
-                    // Si el rol no existe, eliminar el usuario creado
                     await _userRepository.DeleteUserAsync(externalUser);
                     throw new Exception("Role 'Externo' does not exist. User creation has been rolled back.");
                 }
 
-                // Normalizar el clientUri para evitar barras diagonales al final
-                var normalizedClientUri = registerExternalUserDto.ClientUri.TrimEnd('/');
-                // Generar el token de confirmación de email
+                // Generar token de confirmación
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(externalUser);
-                var confirmLink = $"{registerExternalUserDto.ClientUri}?userId={externalUser.Id}&token={Uri.EscapeDataString(token)}";
 
-                // Enviar correo de confirmación
-                var subject = "Email Confirmation";
-                var body = $"<p>To confirm your email address, click the link below:</p><p><a href='{confirmLink}'>Confirm Email</a></p>";
-                await _emailService.SendEmailAsync(externalUser.Email, subject, body);
+                // Enviar el correo de confirmación
+                // AHORA PASAMOS TAMBIÉN externalUser.UserName COMO 5° PARÁMETRO
+                await SendConfirmationEmailAsync(
+                    registerExternalUserDto.Email,
+                    registerExternalUserDto.ClientUri,
+                    externalUser.Id,
+                    token,
+                    externalUser.UserName
+                );
 
                 return true;
             }
@@ -145,7 +146,7 @@ namespace trackit.server.Services
         }
 
 
-        // Método para enviar un enlace de recuperación de contraseña (sin cambios)
+        // Método para enviar un enlace de recuperación de contraseña
         public async Task<bool> SendPasswordResetLinkAsync(string email, string clientUri)
         {
             try
@@ -158,27 +159,16 @@ namespace trackit.server.Services
                 if (string.IsNullOrEmpty(token))
                     throw new PasswordResetException("Failed to generate reset token.");
 
-                // Normalizar el clientUri para evitar barras diagonales al final
-                var normalizedClientUri = clientUri.TrimEnd('/');
-
-                // Codificar el token para uso seguro en la URL
                 var encodedToken = Uri.EscapeDataString(token);
                 var userId = user.Id;
-
-                // Generar el enlace de restablecimiento de contraseña
-                var resetLink = $"{normalizedClientUri}?userId={userId}&token={encodedToken}";
+                var resetLink = $"{clientUri}?userId={userId}&token={encodedToken}";
 
                 var subject = "Password Reset Request";
                 var body = $"<p>To reset your password, click the link below:</p><p><a href='{resetLink}'>Reset Password</a></p>";
 
-                try
-                {
-                    await _emailService.SendEmailAsync(email, subject, body);
-                }
-                catch (Exception ex)
-                {
-                    throw new EmailSendException("An error occurred while sending the email for password reset.", ex);
-                }
+                var templateData = new { Name = user.FirstName, ResetUrl = resetLink };
+
+                await _emailService.SendEmailAsync(email, subject, body, templateData);
 
                 return true;
             }
@@ -187,6 +177,7 @@ namespace trackit.server.Services
                 throw new Exception("An error occurred while processing the password reset request.");
             }
         }
+
 
         public async Task<bool> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
         {
@@ -221,7 +212,6 @@ namespace trackit.server.Services
                 throw new InvalidOperationException($"Failed to reset password. Errors: {string.Join(", ", errorMessages)}");
             }
         }
-
 
 
         public async Task<UserProfileDto> GetUserProfileAsync(string userId)
@@ -381,10 +371,11 @@ namespace trackit.server.Services
         public async Task SendAccountActivationEmailAsync(string email)
         {
             string subject = "Your account has been activated";
-            string message = "<p>Your account has been successfully activated. You can now log in.</p>";
-            await _emailService.SendEmailAsync(email, subject, message);
-        }
+            string message = "<p>Your account has been successfully activated. You can now log in.</p><p><a href='http://trackit.somee.com'>Go to Login</a></p>";
 
+            // Pasar null como templateData si no es necesario
+            await _emailService.SendEmailAsync(email, subject, message, null);
+        }
 
         // Subir la imagen para un usuario
         public async Task<User> UploadImageAsync(IFormFile file, string userId)
@@ -405,5 +396,25 @@ namespace trackit.server.Services
             return await _userRepository.GetUserByEmailAsync(email);
         }
 
+        // ---------------------------------------------------------
+        // 3) SendConfirmationEmailAsync privado
+        // ---------------------------------------------------------
+        private async Task<bool> SendConfirmationEmailAsync(string email, string clientUri, string userId, string token, string userName)
+        {
+            var confirmLink = $"{clientUri}?userId={userId}&token={Uri.EscapeDataString(token)}";
+            var subject = "Email Confirmation";
+            var templateName = "email-confirmation"; // nombre de la plantilla .html (sin extensión)
+
+            // El objeto con la data para Handlebars
+            var templateData = new
+            {
+                name = userName,
+                confirmationUrl = confirmLink
+            };
+
+            // Llama a tu servicio de email, que busca "Templates/email-confirmation.html" 
+            await _emailService.SendEmailAsync(email, subject, templateName, templateData);
+            return true;
+        }
     }
 }
