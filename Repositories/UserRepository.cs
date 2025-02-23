@@ -67,11 +67,35 @@ namespace trackit.server.Repositories
             }
         }
 
-        public async Task DeleteUserAsync(User user)
+        public async Task<bool> DeleteUserAsync(User user)
         {
-            await _userManager.DeleteAsync(user);
-        }
+            // Cargar explícitamente las relaciones que pueden causar conflicto.
+            await _userDbContext.Entry(user).Reference(u => u.ExternalUser).LoadAsync();
+            await _userDbContext.Entry(user).Reference(u => u.InternalUser).LoadAsync();
+            await _userDbContext.Entry(user).Reference(u => u.AdminUser).LoadAsync();
 
+            // Remover las entidades relacionadas, si existen.
+            if (user.ExternalUser != null)
+            {
+                _userDbContext.ExternalUsers.Remove(user.ExternalUser);
+            }
+            if (user.InternalUser != null)
+            {
+                _userDbContext.InternalUsers.Remove(user.InternalUser);
+            }
+            if (user.AdminUser != null)
+            {
+                _userDbContext.AdminUsers.Remove(user.AdminUser);
+            }
+
+            // Remover el usuario
+            _userDbContext.Users.Remove(user);
+
+            // Guardar los cambios y retornar true si se eliminaron registros.
+
+            var changes = await _userDbContext.SaveChangesAsync();
+            return changes > 0;
+        }
 
         public async Task<string> GeneratePasswordResetTokenAsync(User user)
         {
@@ -82,8 +106,6 @@ namespace trackit.server.Repositories
         {
             return await _userManager.ResetPasswordAsync(user, token, newPassword);
         }
-
-
 
         public async Task<User> GetUserWithRelationsByIdAsync(string userId)
         {
@@ -127,9 +149,6 @@ namespace trackit.server.Repositories
                 .ToListAsync();
         }
 
-
-        /*******************************************************************************************************/
-
         // Asignar una imagen predeterminada a todos los usuarios que no tienen imagen
         public async Task AssignDefaultImageToAllUsersAsync()
         {
@@ -165,13 +184,6 @@ namespace trackit.server.Repositories
 
             return assignedUsers;
         }
-
     }
 
 }
-
-
-
-
-
-

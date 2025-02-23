@@ -10,7 +10,7 @@ namespace trackit.server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]  // Solo permitir acceso a usuarios autenticados
+    [Authorize(Roles = "Admin")]
     public class AdminController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -24,7 +24,6 @@ namespace trackit.server.Controllers
 
         // Endpoint para obtener todos los usuarios (Solo Admin)
         [HttpGet("GetAllUsers")]
-        [Authorize(Roles = "Admin")]  // Solo Admin puede acceder a este endpoint
         public async Task<IActionResult> GetAllUsers()
         {
             try
@@ -44,7 +43,6 @@ namespace trackit.server.Controllers
 
         // Endpoint para obtener usuarios externos (Solo Admin)
         [HttpGet("GetExternalUsers")]
-        [Authorize(Roles = "Admin")]  // Solo Admin puede acceder a este endpoint
         public async Task<IActionResult> GetExternalUsers()
         {
             try
@@ -64,7 +62,7 @@ namespace trackit.server.Controllers
 
         // Endpoint para obtener usuarios internos (Admin e Interno pueden acceder)
         [HttpGet("GetInternalUsers")]
-        [Authorize(Roles = "Admin,Internal")]  // Admin e Interno pueden acceder
+        [Authorize(Roles = "Admin,Internal")]
         public async Task<IActionResult> GetInternalUsers()
         {
             try
@@ -84,7 +82,6 @@ namespace trackit.server.Controllers
 
         // Endpoint para asignar la imagen por defecto a todos los usuarios (Solo Admin)
         [HttpPost("assign-default-image")]
-        [Authorize(Roles = "Admin")]  // Solo Admin puede acceder a este endpoint
         public async Task<IActionResult> AssignDefaultImageToAllUsers()
         {
             try
@@ -99,7 +96,6 @@ namespace trackit.server.Controllers
         }
 
         [HttpPut("UpdateUserStatus")]
-        [Authorize(Roles = "Admin")]  // Solo Admin puede acceder a este endpoint
         public async Task<IActionResult> UpdateUserStatus([FromBody] UpdateUserStatusDto updateDto)
         {
             try
@@ -162,6 +158,22 @@ namespace trackit.server.Controllers
             }
         }
 
-
+        [HttpDelete("DeleteUser/{id}")]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            try
+            {
+                var result = await _userService.DeleteUserAsync(id);
+                if (!result)
+                {
+                    return NotFound("User not found or could not be deleted.");
+                }
+                return Ok("User deleted successfully.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
     }
 }

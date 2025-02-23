@@ -14,7 +14,7 @@ namespace trackit.server.Repositories.Interfaces
         Task<IList<string>> GetUserRolesAsync(User user);
         Task<bool> RoleExistsAsync(string roleName);  // Verifica si un rol existe
         Task AssignRoleAsync(User user, string roleName);  // Asigna un rol a un usuario
-        Task DeleteUserAsync(User user);  // Elimina un usuario
+        Task<bool> DeleteUserAsync(User user);
         Task<string> GeneratePasswordResetTokenAsync(User user);  // Genera token de restablecimiento
         Task<IdentityResult> ResetPasswordAsync(User user, string token, string newPassword);  // Restablece contraseña
         Task<User> GetUserWithRelationsByIdAsync(string userId);
@@ -24,7 +24,6 @@ namespace trackit.server.Repositories.Interfaces
         Task AssignDefaultImageToAllUsersAsync();
         Task<User> UpdateUserImageAsync(string userId, string imageUrl);
         Task<List<User>> GetAssignedUsersAsync(int requirementId);
-
     }
 
 }

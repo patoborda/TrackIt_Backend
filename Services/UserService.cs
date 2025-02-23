@@ -42,7 +42,7 @@ namespace trackit.server.Services
             _imageService = imageService;
         }
 
-        
+
         // ---------------------------------------------------------
         public async Task<bool> RegisterInternalUserAsync(RegisterInternalUserDto registerInternalUserDto)
         {
@@ -92,10 +92,6 @@ namespace trackit.server.Services
             }
         }
 
-
-        // ---------------------------------------------------------
-        // 2) Register External User
-        // ---------------------------------------------------------
         public async Task<bool> RegisterExternalUserAsync(RegisterExternalUserDto registerExternalUserDto)
         {
             try
@@ -145,7 +141,6 @@ namespace trackit.server.Services
             }
         }
 
-
         // Método para enviar un enlace de recuperación de contraseña
         public async Task ForgotPasswordAsync(string email, string clientUri)
         {
@@ -175,7 +170,6 @@ namespace trackit.server.Services
             // 5) Enviar el correo con tu servicio de email
             await _emailService.SendEmailAsync(user.Email, subject, templateName, templateData);
         }
-
 
         public async Task<bool> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
         {
@@ -210,7 +204,6 @@ namespace trackit.server.Services
                 throw new InvalidOperationException($"Failed to reset password. Errors: {string.Join(", ", errorMessages)}");
             }
         }
-
 
         public async Task<UserProfileDto> GetUserProfileAsync(string userId)
         {
@@ -334,7 +327,7 @@ namespace trackit.server.Services
 
             // Mapear a DTO de usuarios internos
             var userDtos = internalUsers.Select(u => new InternalUserProfileDto
-            {   
+            {
                 Id = u.Id,
                 FirstName = u.FirstName,
                 LastName = u.LastName,
@@ -369,10 +362,13 @@ namespace trackit.server.Services
         public async Task SendAccountActivationEmailAsync(string email)
         {
             string subject = "Your account has been activated";
-            string message = "<p>Your account has been successfully activated. You can now log in.</p><p><a href='http://trackit.somee.com'>Go to Login</a></p>";
+            var templateName = "account-activation"; // Este es el nombre del template sin la extensión .html
 
-            // Pasar null como templateData si no es necesario
-            await _emailService.SendEmailAsync(email, subject, message, null);
+            // Puedes obtener el nombre del usuario si lo tienes; si no, usar el email o un valor genérico.
+            // Aquí se asume que se usará el email como fallback.
+            var templateData = new { name = email };
+
+            await _emailService.SendEmailAsync(email, subject, templateName, templateData);
         }
 
         // Subir la imagen para un usuario
@@ -394,9 +390,6 @@ namespace trackit.server.Services
             return await _userRepository.GetUserByEmailAsync(email);
         }
 
-        // ---------------------------------------------------------
-        // 3) SendConfirmationEmailAsync privado
-        // ---------------------------------------------------------
         private async Task<bool> SendConfirmationEmailAsync(string email, string clientUri, string userId, string token, string userName)
         {
             var confirmLink = $"{clientUri}?userId={userId}&token={Uri.EscapeDataString(token)}";
@@ -414,5 +407,41 @@ namespace trackit.server.Services
             await _emailService.SendEmailAsync(email, subject, templateName, templateData);
             return true;
         }
+
+        public async Task<bool> DeleteUserAsync(string userId)
+        {
+            // Obtener el usuario antes de eliminarlo (para disponer de su email y nombre)
+            var user = await _userRepository.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            // Guardamos los datos necesarios antes de eliminar
+            var email = user.Email;
+            var name = user.FirstName; // O usa user.UserName si lo prefieres
+
+            // Intentar eliminar el usuario (esto elimina también las entidades relacionadas, según tu implementación)
+            bool result = await _userRepository.DeleteUserAsync(user);
+
+            // Si se eliminó correctamente, enviar correo de notificación
+            if (result)
+            {
+                await SendAccountDeletedEmailAsync(email, name);
+            }
+
+            return result;
+        }
+
+        private async Task SendAccountDeletedEmailAsync(string email, string name)
+        {
+            string subject = "Your account has been deleted";
+            string templateName = "account-deleted"; // Este es el nombre del template sin la extensión (.html)
+            var templateData = new { name = name };
+
+            // Llama al servicio de email, que buscará Templates/account-deleted.html
+            await _emailService.SendEmailAsync(email, subject, templateName, templateData);
+        }
+
     }
 }

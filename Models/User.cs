@@ -23,31 +23,23 @@ namespace trackit.server.Models
         // Relación uno-a-muchos con Comments
         public List<Comment> Comments { get; set; } = new List<Comment>();
     }
-
-    // Clase para datos específicos del usuario interno
     public class InternalUser
     {
         public string Id { get; set; } = null!; // Clave primaria igual al Id de User
         public required string Cargo { get; set; }
         public required string Departamento { get; set; }
-
-        // Relación inversa con User
         public User User { get; set; } = null!;
     }
 
-    // Clase para datos específicos del usuario externo
     public class ExternalUser
     {
         public string Id { get; set; } = null!; // Clave primaria igual al Id de User
         public required string Cuil { get; set; }
         public required string Empresa { get; set; }
         public required string Descripcion { get; set; }
-
-        // Relación inversa con User
         public User User { get; set; } = null!;
     }
 
-    // Clase para datos específicos del administrador
     public class AdminUser
     {
         public string Id { get; set; } = null!; // Clave primaria igual al Id de User

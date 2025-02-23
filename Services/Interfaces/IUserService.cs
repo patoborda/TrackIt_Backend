@@ -22,5 +22,6 @@ namespace trackit.server.Services
         Task AssignDefaultImageToAllUsersAsync();
         Task<User> GetUserByEmailAsync(string email);
         Task SendAccountActivationEmailAsync(string email);
+        Task<bool> DeleteUserAsync(string userId);
     }
 }

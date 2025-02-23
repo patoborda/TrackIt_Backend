@@ -106,28 +106,7 @@ namespace trackit.server.Data
                 .WithMany()
                 .HasForeignKey(r => r.PriorityId)
                 .OnDelete(DeleteBehavior.SetNull);
-            /*
-            // Configuración de la relación Comment -> Requirement
-            modelBuilder.Entity<Comment>()
-                .HasOne(c => c.Requirement)
-                .WithMany(r => r.Comments)
-                .HasForeignKey(c => c.RequirementId)
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired(false);
-
-            // Configuración de la relación Comment -> User
-            modelBuilder.Entity<Comment>()
-                .HasOne(c => c.User)
-                .WithMany(u => u.Comments)
-                .HasForeignKey(c => c.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // Configuración de la relación Comment -> AttachedFile
-            modelBuilder.Entity<Comment>()
-                .HasMany(c => c.Files)
-                .WithOne()
-                .OnDelete(DeleteBehavior.Cascade);
-            */
+            
             // Configuración de la relación muchos-a-muchos User -> Notification
             modelBuilder.Entity<UserNotification>()
                 .HasKey(un => new { un.UserId, un.NotificationId });
