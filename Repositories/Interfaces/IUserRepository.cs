@@ -21,8 +21,6 @@ namespace trackit.server.Repositories.Interfaces
         Task<List<User>> GetUsersExcludingAdminsAsync();
         Task<List<User>> GetExternalUsersAsync();
         Task<List<User>> GetInternalUsersAsync();
-
-        /*********************************************************/
         Task AssignDefaultImageToAllUsersAsync();
         Task<User> UpdateUserImageAsync(string userId, string imageUrl);
         Task<List<User>> GetAssignedUsersAsync(int requirementId);

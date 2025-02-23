@@ -147,35 +147,33 @@ namespace trackit.server.Services
 
 
         // Método para enviar un enlace de recuperación de contraseña
-        public async Task<bool> SendPasswordResetLinkAsync(string email, string clientUri)
+        public async Task ForgotPasswordAsync(string email, string clientUri)
         {
-            try
+            // 1) Buscar el usuario (usando _userManager, en vez de _userRepository)
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
             {
-                var user = await _userRepository.GetUserByEmailAsync(email);
-                if (user == null)
-                    throw new UserNotFoundException();
-
-                var token = await _userRepository.GeneratePasswordResetTokenAsync(user);
-                if (string.IsNullOrEmpty(token))
-                    throw new PasswordResetException("Failed to generate reset token.");
-
-                var encodedToken = Uri.EscapeDataString(token);
-                var userId = user.Id;
-                var resetLink = $"{clientUri}?userId={userId}&token={encodedToken}";
-
-                var subject = "Password Reset Request";
-                var body = $"<p>To reset your password, click the link below:</p><p><a href='{resetLink}'>Reset Password</a></p>";
-
-                var templateData = new { Name = user.FirstName, ResetUrl = resetLink };
-
-                await _emailService.SendEmailAsync(email, subject, body, templateData);
-
-                return true;
+                throw new UserNotFoundException(); // O tu excepción preferida
             }
-            catch (Exception)
+
+            // 2) Generar token de reseteo
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            // 3) Construir el enlace (por ejemplo, agregas userId y token a la URL del frontend)
+            // Nota: usa 'Uri.EscapeDataString(token)' para no romper el query param
+            var resetLink = $"{clientUri}?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+
+            // 4) Preparar asunto, nombre de la plantilla y datos para Handlebars
+            var subject = "Password Reset Request";
+            var templateName = "password-reset"; // Debes tener 'Templates/password-reset.html'
+            var templateData = new
             {
-                throw new Exception("An error occurred while processing the password reset request.");
-            }
+                name = user.UserName,   // O user.FirstName si quieres
+                resetUrl = resetLink
+            };
+
+            // 5) Enviar el correo con tu servicio de email
+            await _emailService.SendEmailAsync(user.Email, subject, templateName, templateData);
         }
 
 

@@ -39,9 +39,14 @@ namespace trackit.server.Extensions
 
         public static void ConfigureIdentity(this IServiceCollection services)
         {
-            services.AddIdentity<User, IdentityRole>()
-                .AddEntityFrameworkStores<UserDbContext>()
-                .AddDefaultTokenProviders();
+            services.AddIdentityCore<User>(options =>
+            {
+                // Configura tus opciones de password, user, etc.
+            })
+            .AddSignInManager<SignInManager<User>>()
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<UserDbContext>()
+            .AddDefaultTokenProviders();
         }
 
         public static void ConfigureJwt(this IServiceCollection services, IConfiguration config)

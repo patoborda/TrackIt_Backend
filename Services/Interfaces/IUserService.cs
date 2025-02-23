@@ -11,7 +11,7 @@ namespace trackit.server.Services
     {
         Task<bool> RegisterInternalUserAsync(RegisterInternalUserDto registerInternalUserDto);
         Task<bool> RegisterExternalUserAsync(RegisterExternalUserDto registerExternalUserDto);
-        Task<bool> SendPasswordResetLinkAsync(string email, string clientUri);
+        Task ForgotPasswordAsync(string email, string clientUri);
         Task<bool> ResetPasswordAsync(ResetPasswordDto resetPasswordDto);
         Task<UserProfileDto> GetUserProfileAsync(string userId);
         Task<List<UserProfileDto>> GetAllUsersAsync();

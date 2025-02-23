@@ -39,11 +39,11 @@ var app = builder.Build();
 
 // 🔹 Configurar middleware (orden correcto)
 app.UseMiddleware<ExceptionHandlingMiddleware>(); // Primero para manejar errores globales
-app.UseCors("AllowLocalhost");
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseCors("AllowLocalhost");
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseRouting();
 
 // 🔹 Logs estructurados para autenticación
 var logger = app.Services.GetRequiredService<ILogger<Program>>();

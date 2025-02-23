@@ -9,6 +9,7 @@ using trackit.server.Models;
 using System.Security.Claims;
 using static trackit.server.Dtos.RegisterUserDto;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace trackit.server.Controllers
 {
@@ -129,35 +130,20 @@ namespace trackit.server.Controllers
 
             try
             {
-                var result = await _userService.SendPasswordResetLinkAsync(forgotPasswordDto.Email, forgotPasswordDto.ClientUri);
-                var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
+                // 1) Delegamos todo al servicio
+                await _userService.ForgotPasswordAsync(forgotPasswordDto.Email, forgotPasswordDto.ClientUri);
 
-                if (user != null)
-                {
-                    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                    var resetUrl = $"{_configuration["AppUrl"]}/reset-password?token={Uri.EscapeDataString(token)}";
-
-                    // Enviar el correo de restablecimiento
-                    string subject = "Reset Your Password";
-                    string templateName = "password-reset"; // Nombre de la plantilla
-                    var templateData = new { userName = user.UserName, resetUrl = resetUrl };
-
-                    await _emailService.SendEmailAsync(user.Email, subject, templateName, templateData);
-                }
-
+                // 2) Retornamos un mensaje de éxito
                 return Ok(new { message = "Password reset link sent successfully" });
             }
             catch (UserNotFoundException)
             {
                 return NotFound(new { message = "User not found" });
             }
-            catch (EmailSendException ex)
+            catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while sending the password reset link" });
+                // Puedes refinar el manejo de excepciones si quieres
+                return StatusCode(500, new { message = ex.Message });
             }
         }
 
