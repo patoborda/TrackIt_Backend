@@ -1,18 +1,7 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using trackit.server.Data;
-using trackit.server.Models;
-using trackit.server.Patterns.Observer;
-using trackit.server.Middlewares;
-using trackit.server.Hubs;
 using trackit.server.Extensions;
-using CloudinaryDotNet;
-using Microsoft.OpenApi.Models;
+using trackit.server.Middlewares;
 using trackit.server.Services;
-using trackit.server.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,11 +22,18 @@ builder.Services.ConfigureCloudinary(builder.Configuration);
 builder.Services.ConfigureObserverPattern();
 builder.Services.ConfigureRepositories();
 builder.Services.ConfigureServices();
-builder.Services.ConfigureSignalR();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
 // 🔹 Configurar middleware (orden correcto)
+<<<<<<< HEAD
+// 1. Middleware para manejo de excepciones globales
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+// 2. Habilitar el enrutamiento
+app.UseRouting();
+=======
 app.UseMiddleware<ExceptionHandlingMiddleware>(); // Primero para manejar errores globales
 app.UseHttpsRedirection();
 app.UseRouting();
@@ -45,7 +41,7 @@ app.UseCors("AllowLocalhost");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 🔹 Logs estructurados para autenticación
+// 5. Middleware de logs para el header de autorización
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 app.Use(async (context, next) =>
 {
@@ -60,14 +56,14 @@ app.Use(async (context, next) =>
     await next.Invoke();
 });
 
-// 🔹 Configurar Swagger solo en desarrollo
+// 6. Configurar Swagger solo en desarrollo
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 🔹 Inicialización de Admin y Roles al iniciar
+// 7. Inicialización de Admin y Roles al iniciar
 app.Lifetime.ApplicationStarted.Register(async () =>
 {
     using var scope = app.Services.CreateScope();
@@ -78,7 +74,12 @@ app.Lifetime.ApplicationStarted.Register(async () =>
     await RoleSeeder.SeedRoles(roleManager);
 });
 
-// 🔹 Configurar Hubs y Controladores
-app.MapHub<CommentHub>("/commentHub");
+// 8. Configurar Hubs y Controladores
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapHub<ChatHub>("/chatHub");
+});
+
 app.MapControllers();
+
 app.Run();

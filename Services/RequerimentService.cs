@@ -37,7 +37,7 @@ public class RequirementService : IRequirementService
         {
             // Validar Tipo y Categoría
             if (!await _repository.ValidateTypeAndCategoryAsync(requirementDto.RequirementTypeId, requirementDto.CategoryId))
-                throw new ArgumentException("The selected category does not belong to the specified type.");
+                throw new ArgumentException("La categoría seleccionada no pertenece al tipo especificado.");
 
             // Crear código único para el requerimiento
             var nextSequentialNumber = await _repository.GetNextSequentialNumberAsync();
@@ -62,6 +62,60 @@ public class RequirementService : IRequirementService
             };
 
             var savedRequirement = await _repository.AddAsync(newRequirement);
+
+            // Procesar archivos adjuntos (si se enviaron)
+            if (requirementDto.Files != null && requirementDto.Files.Any())
+            {
+                // Verificar cantidad máxima de archivos
+                if (requirementDto.Files.Count() > 5)
+                    throw new ArgumentException("Solo se permiten hasta 5 archivos adjuntos.");
+
+                // Definir extensiones permitidas (en minúsculas)
+                var allowedExtensions = new HashSet<string> { ".doc", ".docx", ".xls", ".xlsx", ".pdf" };
+                // Tamaño máximo en bytes: 5 MB
+                long maxFileSize = 5 * 1024 * 1024;
+
+                // Directorio de destino: "uploads/{RequirementCode}"
+                var uploadBasePath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", savedRequirement.Code);
+                if (!Directory.Exists(uploadBasePath))
+                    Directory.CreateDirectory(uploadBasePath);
+
+                foreach (var file in requirementDto.Files)
+                {
+                    var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+                    if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension))
+                        throw new ArgumentException($"El archivo '{file.FileName}' tiene una extensión no permitida.");
+
+                    if (file.Length > maxFileSize)
+                        throw new ArgumentException($"El archivo '{file.FileName}' excede el tamaño máximo permitido de 5 MB.");
+
+                    var fileName = Path.GetFileName(file.FileName);
+                    var filePath = Path.Combine(uploadBasePath, fileName);
+
+                    // Guardar el archivo en el servidor
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+
+                    // Crear instancia de Attachment y asociarlo al requerimiento
+                    var attachment = new Attachment
+                    {
+                        RequirementId = savedRequirement.Id,
+                        FileName = fileName,
+                        FilePath = filePath,
+                        UploadedAt = DateTime.UtcNow
+                    };
+
+                    if (savedRequirement.Attachments == null)
+                        savedRequirement.Attachments = new List<Attachment>();
+
+                    savedRequirement.Attachments.Add(attachment);
+                }
+
+                // Actualizar el requerimiento para guardar los attachments
+                await _repository.UpdateAsync(savedRequirement);
+            }
 
             // Crear notificación general para el requerimiento
             var notification = new Notification
@@ -140,6 +194,7 @@ public class RequirementService : IRequirementService
             throw;
         }
     }
+
     public async Task<RequirementResponseDto> UpdateRequirementAsync(int requirementId, RequirementUpdateDto updateDto, string userId)
         {
             try

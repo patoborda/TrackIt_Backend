@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations;
 
 public class RequirementCreateDto
 {
@@ -18,4 +19,7 @@ public class RequirementCreateDto
     public List<string>? AssignedUsers { get; set; } // Lista de IDs de usuarios asignados
 
     public List<int>? RelatedRequirementIds { get; set; } // Opcional
+
+    // Nueva propiedad para los archivos adjuntos
+    public List<IFormFile>? Files { get; set; }
 }

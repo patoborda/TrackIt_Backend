@@ -25,8 +25,7 @@ public class Requirement
     public string CreatedByUserId { get; set; } // Usuario creador
     public User CreatedByUser { get; set; } // Relación con el usuario
 
-    // Relación con comentarios
-    public List<Comment> Comments { get; set; } = new();
+
 
     // Relación con archivos adjuntos (de los requerimientos)
     public ICollection<Attachment> Attachments { get; set; }

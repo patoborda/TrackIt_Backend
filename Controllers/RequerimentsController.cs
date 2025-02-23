@@ -24,7 +24,7 @@ namespace trackit.server.Controllers
 
         // Crear un requerimiento
         [HttpPost("createRequeriment")]
-        public async Task<IActionResult> CreateRequirement([FromBody] RequirementCreateDto requirementDto)
+        public async Task<IActionResult> CreateRequirement([FromForm] RequirementCreateDto requirementDto)
         {
             try
             {
@@ -45,6 +45,7 @@ namespace trackit.server.Controllers
                 return StatusCode(500, new { Message = "An error occurred while creating the requirement.", Error = ex.Message });
             }
         }
+
 
         // Actualizar un requerimiento
         [HttpPut("{id}")]
