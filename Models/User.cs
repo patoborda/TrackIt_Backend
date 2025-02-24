@@ -20,8 +20,7 @@ namespace trackit.server.Models
         // Relación muchos-a-muchos con Notifications
         public ICollection<UserNotification> UserNotifications { get; set; } = new List<UserNotification>();
 
-        // Relación uno-a-muchos con Comments
-        public List<Comment> Comments { get; set; } = new List<Comment>();
+   
     }
     public class InternalUser
     {

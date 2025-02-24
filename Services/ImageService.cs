@@ -23,20 +23,32 @@ namespace trackit.server.Services
                 throw new ArgumentException("No file uploaded");
             }
 
-            var uploadParams = new ImageUploadParams()
+            try
             {
-                File = new FileDescription(file.FileName, file.OpenReadStream()),
-                Folder = "trackit"
-            };
+                var uploadParams = new ImageUploadParams()
+                {
+                    File = new FileDescription(file.FileName, file.OpenReadStream()),
+                    Folder = "trackit"
+                };
 
-            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
 
-            if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                return uploadResult.SecureUrl.AbsoluteUri; // Retorna la URL segura de la imagen subida
+                Console.WriteLine($"Cloudinary Response: {uploadResult.StatusCode}");
+
+                if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    Console.WriteLine($"Image uploaded successfully: {uploadResult.SecureUrl.AbsoluteUri}");
+                    return uploadResult.SecureUrl.AbsoluteUri;
+                }
+
+                throw new Exception("Error uploading image to Cloudinary");
             }
-
-            throw new Exception("Error uploading image");
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in UploadImageAsync: {ex.Message}");
+                throw;
+            }
         }
+
     }
 }

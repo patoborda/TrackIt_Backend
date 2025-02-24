@@ -168,13 +168,29 @@ namespace trackit.server.Repositories
         public async Task<User> UpdateUserImageAsync(string userId, string imageUrl)
         {
             var user = await _userDbContext.Users.FindAsync(userId);
-            if (user != null)
+
+            if (user == null)
             {
-                user.Image = imageUrl;
-                await _userDbContext.SaveChangesAsync();
+                Console.WriteLine($"User with ID {userId} not found.");
+                throw new Exception("User not found");
             }
+
+            user.Image = imageUrl;
+
+            try
+            {
+                await _userDbContext.SaveChangesAsync();
+                Console.WriteLine($"User {userId} image updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating user image: {ex.Message}");
+                throw;
+            }
+
             return user;
         }
+
         public async Task<List<User>> GetAssignedUsersAsync(int requirementId)
         {
             var assignedUsers = await _userDbContext.UserRequirements

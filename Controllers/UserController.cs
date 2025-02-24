@@ -237,14 +237,25 @@ namespace trackit.server.Controllers
         {
             try
             {
+                // 🔹 LOG: Verifica si el archivo está llegando
+                if (file == null || file.Length == 0)
+                {
+                    Console.WriteLine("❌ Error: No file received.");
+                    return BadRequest(new { message = "No file uploaded" });
+                }
+
+                Console.WriteLine($"📂 Archivo recibido: {file.FileName}, Tamaño: {file.Length}");
+
                 var updatedUser = await _userService.UploadImageAsync(file, userId);
-                return Ok(updatedUser); // Devuelve el usuario actualizado con la URL de la imagen
+                return Ok(updatedUser);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ Error en UploadImage: {ex.Message}");
                 return StatusCode(500, new { message = ex.Message });
             }
         }
+
 
         // Endpoint para obtener un usuario por su ID
         [HttpGet("{id}")]

@@ -16,19 +16,22 @@ public class RequirementService : IRequirementService
     private readonly IRequirementActionService _actionService;
     private readonly INotificationRepository _notificationRepository;
     private readonly RequirementNotifier _notifier;
+    private readonly IWebHostEnvironment _env;  // Inyectamos el entorno
 
     public RequirementService(
         IRequirementRepository repository,
         IUserRepository userRepository,
         IRequirementActionService actionService,
         INotificationRepository notificationRepository,
-        RequirementNotifier notifier)
+        RequirementNotifier notifier,
+        IWebHostEnvironment env)
     {
         _repository = repository;
         _userRepository = userRepository;
         _actionService = actionService;
         _notificationRepository = notificationRepository;
         _notifier = notifier;
+        _env = env;
     }
 
     public async Task<RequirementResponseDto> CreateRequirementAsync(RequirementCreateDto requirementDto, string userId)
@@ -47,7 +50,7 @@ public class RequirementService : IRequirementService
             // Determinar estado inicial
             var status = requirementDto.AssignedUsers != null && requirementDto.AssignedUsers.Any() ? "Asignado" : "Abierto";
 
-            // Crear requerimiento
+            // Crear requerimiento base
             var newRequirement = new Requirement
             {
                 Subject = requirementDto.Subject,
@@ -75,8 +78,8 @@ public class RequirementService : IRequirementService
                 // Tamaño máximo en bytes: 5 MB
                 long maxFileSize = 5 * 1024 * 1024;
 
-                // Directorio de destino: "uploads/{RequirementCode}"
-                var uploadBasePath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", savedRequirement.Code);
+                // Directorio de destino usando ContentRootPath
+                var uploadBasePath = Path.Combine(_env.ContentRootPath, "uploads", savedRequirement.Code);
                 if (!Directory.Exists(uploadBasePath))
                     Directory.CreateDirectory(uploadBasePath);
 
@@ -92,10 +95,17 @@ public class RequirementService : IRequirementService
                     var fileName = Path.GetFileName(file.FileName);
                     var filePath = Path.Combine(uploadBasePath, fileName);
 
-                    // Guardar el archivo en el servidor
-                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    // Guardar el archivo en el servidor con try/catch para capturar errores
+                    try
                     {
-                        await file.CopyToAsync(stream);
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception($"Error al guardar el archivo '{fileName}': {ex.Message}");
                     }
 
                     // Crear instancia de Attachment y asociarlo al requerimiento
@@ -107,9 +117,7 @@ public class RequirementService : IRequirementService
                         UploadedAt = DateTime.UtcNow
                     };
 
-                    if (savedRequirement.Attachments == null)
-                        savedRequirement.Attachments = new List<Attachment>();
-
+                    savedRequirement.Attachments ??= new List<Attachment>();
                     savedRequirement.Attachments.Add(attachment);
                 }
 
@@ -134,8 +142,10 @@ public class RequirementService : IRequirementService
                     if (!await _repository.ValidateUserExistsAsync(assignedUserId))
                         throw new ArgumentException($"User {assignedUserId} does not exist.");
 
+                    // Agregar al requerimiento
                     await _repository.AddUserToRequirementAsync(savedRequirement.Id, assignedUserId);
 
+                    // Crear notificación para el usuario si no existe
                     var existingNotification = await _notificationRepository.GetUserNotificationAsync(assignedUserId, notification.Id);
                     if (existingNotification == null)
                     {
@@ -143,12 +153,12 @@ public class RequirementService : IRequirementService
                     }
 
                     // Notificar al usuario asignado por email
-                    var user = await _userRepository.GetUserByIdAsync(assignedUserId);
-                    if (user != null && !string.IsNullOrEmpty(user.Email))
+                    var assignedUser = await _userRepository.GetUserByIdAsync(assignedUserId);
+                    if (assignedUser != null && !string.IsNullOrEmpty(assignedUser.Email))
                     {
                         await _notifier.NotifyAllAsync("Requirement Assigned", new EmailNotificationData
                         {
-                            Email = user.Email,
+                            Email = assignedUser.Email,
                             Content = $"You have been assigned to the requirement: {savedRequirement.Subject}."
                         });
                     }
@@ -186,6 +196,7 @@ public class RequirementService : IRequirementService
             // Registrar acción de creación
             await _actionService.LogActionAsync(savedRequirement.Id, "Created", "Requirement created successfully.", userId);
 
+            // Mapeamos a DTO final
             return await MapToResponseDtoAsync(savedRequirement);
         }
         catch (Exception ex)

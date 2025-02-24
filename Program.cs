@@ -27,13 +27,11 @@ builder.Services.AddSignalR();
 var app = builder.Build();
 
 // 🔹 Configurar middleware (orden correcto)
-<<<<<<< HEAD
 // 1. Middleware para manejo de excepciones globales
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // 2. Habilitar el enrutamiento
 app.UseRouting();
-=======
 app.UseMiddleware<ExceptionHandlingMiddleware>(); // Primero para manejar errores globales
 app.UseHttpsRedirection();
 app.UseRouting();
